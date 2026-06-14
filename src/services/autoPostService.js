@@ -712,8 +712,8 @@ class AutoPostService {
    * Returns a random delay between 30 and 60 minutes (in milliseconds)
    */
   _getRandomDelay() {
-    const minMs = 30 * 60 * 1000; // 30 minutes
-    const maxMs = 60 * 60 * 1000; // 60 minutes
+    const minMs = 15 * 60 * 1000; // 15 minutes
+    const maxMs = 30 * 60 * 1000; // 30 minutes
     return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
   }
 
@@ -727,7 +727,7 @@ class AutoPostService {
     }
 
     this._scheduleNext();
-    logger.info('AutoPostService started — posting every 30-60 minutes to channel.');
+    logger.info('AutoPostService started — posting every 15-30 minutes to channel.');
   }
 
   /**
@@ -769,7 +769,7 @@ class AutoPostService {
       const replyMarkup = {
         inline_keyboard: [
           [
-            { text: '📱 Download App', url: config.WEBSITE_LINK },
+            { text: '📱 Download App', url: config.POST_LINK },
             { text: '💬 Contact Support', url: config.SUPPORT_LINK }
           ],
           [

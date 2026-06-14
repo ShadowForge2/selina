@@ -2,6 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const config = require('./src/config');
 const telegramService = require('./src/services/telegramService');
 const autoPostService = require('./src/services/autoPostService');
+const groupPromoService = require('./src/services/groupPromoService');
 const { initEvents } = require('./src/events');
 const logger = require('./src/utils/logger');
 
@@ -38,6 +39,10 @@ function startBot() {
     // Initialize Scheduled Channel Auto-Posts
     autoPostService.start();
 
+    // Initialize Scheduled Group Promotions
+    groupPromoService.init(bot);
+    groupPromoService.start();
+
     // Core Bot Startup log
     bot.getMe().then((me) => {
       logger.info(`Telegram Community Manager Bot started successfully! Username: @${me.username}`);
@@ -65,6 +70,7 @@ function startBot() {
 function gracefulShutdown(signal) {
   logger.info(`Received ${signal}. Shutting down services gracefully...`);
   autoPostService.stop();
+  groupPromoService.stop();
   if (bot) {
     bot.stopPolling().then(() => {
       logger.info('Telegram Bot polling stopped cleanly.');

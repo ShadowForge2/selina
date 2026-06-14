@@ -92,20 +92,17 @@ const User = {
 
   async addReferral(userId, referredByUserId) {
     if (isDbConnected()) {
-      // 1. Record the referrer on the new user
       await UserModel.findOneAndUpdate(
         { userId },
         { $set: { referredBy: referredByUserId } },
         { upsert: true }
       );
-      // 2. Increment referral count on the referrer
       return await UserModel.findOneAndUpdate(
         { userId: referredByUserId },
         { $inc: { referralsCount: 1 } },
         { new: true, upsert: true }
       );
     } else {
-      // Offline fallback
       await this.upsertUser(userId, { referredBy: referredByUserId });
       const referrer = await this.upsertUser(referredByUserId, {});
       referrer.referralsCount = (referrer.referralsCount || 0) + 1;

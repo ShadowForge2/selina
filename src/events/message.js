@@ -37,6 +37,29 @@ module.exports = {
       const spamCheckPassed = await processSpamFilter(msg);
       if (!spamCheckPassed) return;
 
+      // 2C. React with ❤️ to positive messages
+      if (text && isPositive(text)) {
+        try { await bot.setMessageReaction(chat.id, msg.message_id, { reaction: [{ type: 'emoji', emoji: '❤' }] }); } catch (e) {}
+      }
+
+      // 2D. Auto-answer questions and greetings in group
+      if (text && shouldAutoReply(text)) {
+        const aiReply = await aiService.processMessage(text);
+        if (aiReply) {
+          const mention = `[@${esc(from.username || from.first_name)}](tg://user?id=${from.id})`;
+          await telegramService.sendMessage(chat.id, `${mention}\n\n${aiReply}`);
+          return;
+        }
+        // Fallback for unanswered questions (not greetings)
+        if (isRealQuestion(text)) {
+          const mention = `[@${esc(from.username || from.first_name)}](tg://user?id=${from.id})`;
+          const referral = `${mention}\n\n❓ *I couldn't find a direct answer to your question*\\.\n` +
+            `Please contact @${esc(config.SUPPORT_USERNAME)} for further assistance\\. They will be happy to help\\! 💬`;
+          await telegramService.sendMessage(chat.id, referral);
+          return;
+        }
+      }
+
     } else {
       // ==========================================
       // PRIVATE DM PROCESSING FLOW
@@ -103,3 +126,75 @@ module.exports = {
     }
   }
 };
+
+function isRealQuestion(text) {
+  const lower = text.toLowerCase().trim();
+  if (lower.includes('?')) return true;
+  if (/^(who|what|where|when|why|how|which|whose|whom)\b/i.test(lower)) return true;
+  if (/^(can|could|will|would|shall|should|do|does|did|is|are|am|was|were|has|have|had)\s/i.test(lower)) return true;
+  return false;
+}
+
+function shouldAutoReply(text) {
+  const lower = text.toLowerCase().trim();
+
+  // Has question mark
+  if (lower.includes('?')) return true;
+
+  // Starts with question words
+  if (/^(who|what|where|when|why|how|which|whose|whom)\b/i.test(lower)) return true;
+
+  // Starts with auxiliary verbs (questions)
+  if (/^(can|could|will|would|shall|should|do|does|did|is|are|am|was|were|has|have|had)\s/i.test(lower)) return true;
+
+  // Help / confusion phrases
+  const helpPatterns = [
+    'i need help', "i don't understand", "i don't get", "i'm confused",
+    'i dont understand', 'i dont get', 'im confused',
+    'can someone', 'someone help', 'please help',
+    'tell me', 'explain', 'what is', 'how do', 'how to',
+    'anyone know', 'does anyone', 'i want to know', 'i was wondering',
+    'can you tell', 'could you', 'would you',
+    'help me', 'need assistance', 'i have a question'
+  ];
+
+  if (helpPatterns.some(p => lower.startsWith(p) || lower.includes(p))) return true;
+
+  // Greetings
+  const greetings = [
+    'good morning', 'good afternoon', 'good evening', 'good day',
+    'morning', 'hello', 'hi ', 'hey', 'how far', 'howdy',
+    'greetings', 'good to be here', 'what\'s up', 'wassup', 'sup',
+    'yo', 'how are you', 'how do you do', 'nice to meet'
+  ];
+
+  if (greetings.some(g => lower.startsWith(g) || lower === g.trim())) return true;
+
+  // Celebrations (withdrawals, profits, bonuses)
+  const celebrations = [
+    'i got paid', 'i withdrew', 'just withdrew', 'got my withdrawal',
+    'my withdrawal', 'withdrawal successful', 'payment received',
+    'got paid', 'received my', 'made profit', 'i earned',
+    'got the bonus', 'bonus received', 'profit taking', 'taking profit',
+    'made money', 'withdrawal received', 'i received'
+  ];
+
+  return celebrations.some(c => lower.includes(c));
+}
+
+const POSITIVE_WORDS = [
+  'thank you', 'thanks', 'thankful', 'grateful',
+  'great', 'awesome', 'amazing', 'wonderful', 'fantastic',
+  'love it', 'love this', 'i love', '❤️',
+  'helpful', 'useful', 'appreciate', 'appreciated',
+  'nice', 'cool', 'excellent', 'perfect', 'beautiful',
+  'happy', 'blessed', 'congratulations', 'congrats',
+  'well done', 'good job', 'keep it up', 'proud',
+  'best', 'super', 'brilliant', 'outstanding',
+  'solid', 'impressive', 'legend', 'you rock'
+];
+
+function isPositive(text) {
+  const lower = text.toLowerCase().trim();
+  return POSITIVE_WORDS.some(w => lower.includes(w));
+}

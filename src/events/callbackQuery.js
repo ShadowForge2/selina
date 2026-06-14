@@ -85,6 +85,93 @@ module.exports = {
         return;
       }
 
+      // 1B. USER CONFIRMED JOINING GROUP + CHANNEL
+      if (data === 'joined_channels') {
+        await bot.answerCallbackQuery(id);
+
+        // Verify membership in group and channel
+        const GROUP_ID = -1003978624961;
+        const CHANNEL_ID = -1003952364322;
+        let inGroup = false;
+        let inChannel = false;
+
+        try {
+          const groupMember = await bot.getChatMember(GROUP_ID, userId);
+          inGroup = ['member', 'administrator', 'creator'].includes(groupMember.status);
+        } catch (_) {}
+
+        try {
+          const channelMember = await bot.getChatMember(CHANNEL_ID, userId);
+          inChannel = ['member', 'administrator', 'creator'].includes(channelMember.status);
+        } catch (_) {}
+
+        if (!inGroup || !inChannel) {
+          const missing = [];
+          if (!inGroup) missing.push('👥 **Group** \\(@CPBloomFX23\\)');
+          if (!inChannel) missing.push('📢 **Channel** \\(@cpbloomfxofficialtelegram\\)');
+
+          await bot.sendMessage(userId,
+            `⚠️ *You haven\\'t joined all required channels yet\\!*\n\n` +
+            `Please join the following and try again:\n${missing.join('\n')}\n\n` +
+            `👉 Tap the *"I\\'ve joined both"* button again after joining\\.`,
+            { parse_mode: 'MarkdownV2' }
+          );
+          return;
+        }
+
+        try {
+          await bot.editMessageText(
+            `✅ You're all set! 🎉\n\n<b>Download the App below:</b>`,
+            {
+              chat_id: message.chat.id,
+              message_id: message.message_id,
+              parse_mode: 'HTML',
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: '📱 Download App', url: config.POST_LINK }
+                  ]
+                ]
+              }
+            }
+          );
+        } catch (e) {
+          await bot.sendMessage(userId,
+            `✅ You're all set! 🎉\n\n<b>Download the App below:</b>`,
+            {
+              parse_mode: 'HTML',
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: '📱 Download App', url: config.POST_LINK }
+                  ]
+                ]
+              }
+            }
+          );
+        }
+
+        await bot.sendMessage(userId, `🔹 <b>What would you like to do next?</b> 🔹`, {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '📘 Getting Started', callback_data: 'get_started' },
+                { text: '📢 Channel', url: config.CHANNEL_LINK }
+              ],
+              [
+                { text: '💬 Support Ticket', callback_data: 'open_ticket' },
+                { text: '🌐 Website', url: config.WEBSITE_LINK }
+              ],
+              [
+                { text: '🏆 Leaderboard', callback_data: 'leaderboard' }
+              ]
+            ]
+          }
+        });
+        return;
+      }
+
       // 2. GETTING STARTED TUTORIAL (DM Callback)
       if (data === 'get_started') {
         await bot.answerCallbackQuery(id);

@@ -16,10 +16,11 @@ const broadcast = require('./broadcast');
 const faq = require('./faq');
 const ticket = require('./ticket');
 const reply = require('./reply');
+const tagall = require('./tagall');
 
 // Register commands in a map
 const commands = new Map();
-const list = [start, help, rules, verify, mute, ban, warn, stats, broadcast, faq, ticket, reply];
+const list = [start, help, rules, verify, mute, ban, warn, stats, broadcast, faq, ticket, reply, tagall];
 
 list.forEach(cmd => {
   commands.set(cmd.name, cmd);

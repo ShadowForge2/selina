@@ -22,11 +22,13 @@ const config = {
   WEBSITE_LINK: process.env.WEBSITE_LINK || 'https://cpbloomfx.com',
   CONTACT_ADMIN_LINK: process.env.CONTACT_ADMIN_LINK || 'https://t.me/CPBloomFXAdmin',
   APK_FILE_PATH: process.env.APK_FILE_PATH || './assets/bloomfx.apk',
+  GROUP_LINK: process.env.GROUP_LINK || 'https://t.me/CPBloomFXGroup',
   
   VERIFICATION_TIMEOUT_MS: parseInt(process.env.VERIFICATION_TIMEOUT_MS || '120000', 10),
   WARN_LIMIT: parseInt(process.env.WARN_LIMIT || '3', 10),
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-  POST_LINK: process.env.POST_LINK || 'https://t.me/cpbloomfxofficialtelegram/5'
+  POST_LINK: process.env.POST_LINK || 'https://t.me/cpbloomfxofficialtelegram/5',
+  SUPPORT_USERNAME: process.env.SUPPORT_USERNAME || 'mia_malcovaofficialmanagement'
 };
 
 // Check if critical configurations exist

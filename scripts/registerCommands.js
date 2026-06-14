@@ -10,11 +10,9 @@ if (!token) {
 
 const commands = [
   { command: 'start', description: 'Begin interaction with the bot and get referral link' },
-  { command: 'help', description: 'View command documentation' },
   { command: 'rules', description: 'Read community guidelines' },
   { command: 'verify', description: 'Check your verification status' },
-  { command: 'faq', description: 'Interactive FAQ dashboard' },
-  { command: 'ticket', description: 'Open a support ticket with admins' }
+  { command: 'help', description: 'View command documentation' },
 ];
 
 const bot = new TelegramBot(token);
