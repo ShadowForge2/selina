@@ -3,7 +3,7 @@ const { Ticket } = require('../database/models/Ticket');
 const telegramService = require('../services/telegramService');
 const ticketService = require('../services/ticketService');
 const logger = require('../utils/logger');
-const { esc, header, DIVIDER, keyVal, dmWelcomeTemplate, apkInstructionsTemplate } = require('../utils/formatter');
+const { esc, header, DIVIDER, keyVal, dmWelcomeTemplate, apkInstructionsTemplate, welcomeTemplate } = require('../utils/formatter');
 const { LOCAL_FAQ_DB } = require('../services/aiService');
 const config = require('../config');
 
@@ -120,42 +120,96 @@ module.exports = {
           return;
         }
 
-        // Step 2: Join Group
-        const step2Text = `👥 *STEP 2: JOIN OUR GROUP* 👥\n\n` +
-          `You've joined the channel ✅\\! Now join our trading group to connect with fellow traders\\.\n\n` +
-          `👉 Tap the button below, then click ✅ *I've joined* to continue\\.`;
-
+        // Check if user is already in the group
+        const GROUP_ID = config.GROUP_ID ? parseInt(config.GROUP_ID, 10) : -1003978624961;
+        let inGroup = false;
         try {
-          await bot.editMessageText(step2Text, {
-            chat_id: message.chat.id,
-            message_id: message.message_id,
-            parse_mode: 'MarkdownV2',
+          const groupMember = await bot.getChatMember(GROUP_ID, userId);
+          inGroup = ['member', 'administrator', 'creator'].includes(groupMember.status);
+        } catch (_) {
+          // Group check non-critical — proceed
+        }
+
+        if (inGroup) {
+          // Send verification prompt to the group
+          const timeoutSecs = Math.floor(config.VERIFICATION_TIMEOUT_MS / 1000);
+          const verifyWelcomeText = welcomeTemplate(from.first_name, username, userId, timeoutSecs);
+
+          const sentWelcome = await telegramService.sendMessage(GROUP_ID, verifyWelcomeText, {
             reply_markup: {
               inline_keyboard: [
-                [
-                  { text: '👥 Join Group', url: config.GROUP_LINK }
-                ],
-                [
-                  { text: '✅ I\'ve joined', callback_data: 'joined_group' }
-                ]
+                [{ text: '✅ Click here to Verify', callback_data: `verify_user_${userId}` }]
               ]
             }
-          });
-        } catch (editErr) {
-          logger.warn(`[CHANNEL CB] editMessageText failed, falling back to sendMessage: ${editErr.message}`);
-          await bot.sendMessage(userId, step2Text, {
-            parse_mode: 'MarkdownV2',
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: '👥 Join Group', url: config.GROUP_LINK }
-                ],
-                [
-                  { text: "✅ I've joined", callback_data: 'joined_group' }
+          }).catch(() => null);
+
+          // Setup kick timeout for this verify prompt
+          if (sentWelcome) {
+            setTimeout(async () => {
+              try {
+                const dbUser = await User.findByTelegramId(userId);
+                if (dbUser && !dbUser.isVerified) {
+                  await telegramService.deleteMessage(GROUP_ID, sentWelcome.message_id);
+                  await telegramService.kickUser(GROUP_ID, userId);
+                }
+              } catch (_) {}
+            }, config.VERIFICATION_TIMEOUT_MS);
+          }
+
+          const inGroupText = `✅ *CHANNEL JOINED\\!*\n\n` +
+            `You're already in the group ✅\\! A verification prompt has been sent there — click the *✅ Click here to Verify* button to complete your setup\\.`;
+
+          try {
+            await bot.editMessageText(inGroupText, {
+              chat_id: message.chat.id,
+              message_id: message.message_id,
+              parse_mode: 'MarkdownV2',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '👥 Go to Group', url: config.GROUP_LINK }]
                 ]
-              ]
-            }
-          });
+              }
+            });
+          } catch (editErr) {
+            await bot.sendMessage(userId, inGroupText, {
+              parse_mode: 'MarkdownV2',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '👥 Go to Group', url: config.GROUP_LINK }]
+                ]
+              }
+            });
+          }
+        } else {
+          const goGroupText = `✅ *CHANNEL JOINED\\!*\n\n` +
+            `You've joined the channel ✅\\! Now complete your verification in the group:\n\n` +
+            `1️⃣ Tap the button below to open @CPBloomFX23\n` +
+            `2️⃣ Click the *✅ Click here to Verify* button in the welcome message\n\n` +
+            `Already in the group\\? Tap *Send Verify Prompt* below\\.`;
+
+          try {
+            await bot.editMessageText(goGroupText, {
+              chat_id: message.chat.id,
+              message_id: message.message_id,
+              parse_mode: 'MarkdownV2',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '👥 Go to Group', url: config.GROUP_LINK }],
+                  [{ text: '✅ Send Verify Prompt', callback_data: `send_group_verify` }]
+                ]
+              }
+            });
+          } catch (editErr) {
+            await bot.sendMessage(userId, goGroupText, {
+              parse_mode: 'MarkdownV2',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '👥 Go to Group', url: config.GROUP_LINK }],
+                  [{ text: '✅ Send Verify Prompt', callback_data: `send_group_verify` }]
+                ]
+              }
+            });
+          }
         }
         return;
       }
@@ -172,103 +226,62 @@ module.exports = {
         return;
       }
 
-      // 1C. USER CONFIRMED JOINING GROUP (Step 2)
-      if (data === 'joined_group') {
+      // 1C. SEND VERIFICATION PROMPT TO GROUP (for users already in group)
+      if (data === 'send_group_verify') {
         await bot.answerCallbackQuery(id);
 
         const GROUP_ID = config.GROUP_ID ? parseInt(config.GROUP_ID, 10) : -1003978624961;
-        let inGroup = false;
-        let groupCheckFailed = false;
+        const timeoutSecs = Math.floor(config.VERIFICATION_TIMEOUT_MS / 1000);
+        const verifyWelcomeText = welcomeTemplate(from.first_name, username, userId, timeoutSecs);
 
-        try {
-          const groupMember = await bot.getChatMember(GROUP_ID, userId);
-          inGroup = ['member', 'administrator', 'creator'].includes(groupMember.status);
-        } catch (checkErr) {
-          // Bot may not be admin in group, or the user isn't resolvable yet.
-          logger.warn(`[GROUP CHECK] Could not verify group membership for user ${userId}: ${checkErr.message}. Proceeding anyway.`);
-          groupCheckFailed = true;
-          inGroup = true; // Fail-open: trust the user if the check can't be completed
-        }
+        const sentWelcome = await telegramService.sendMessage(GROUP_ID, verifyWelcomeText, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '✅ Click here to Verify', callback_data: `verify_user_${userId}` }]
+            ]
+          }
+        }).catch(() => null);
 
-        if (!inGroup && !groupCheckFailed) {
+        if (sentWelcome) {
+          setTimeout(async () => {
+            try {
+              const dbUser = await User.findByTelegramId(userId);
+              if (dbUser && !dbUser.isVerified) {
+                await telegramService.deleteMessage(GROUP_ID, sentWelcome.message_id);
+                await telegramService.kickUser(GROUP_ID, userId);
+              }
+            } catch (_) {}
+          }, config.VERIFICATION_TIMEOUT_MS);
+
           await bot.sendMessage(userId,
-            `⚠️ You haven't joined the group yet\\!\n\n` +
-            `Please tap the 👥 Join Group button above, join the group, then click "I've joined" again\\.`,
+            `✅ Verification prompt sent to @CPBloomFX23\\! Go there and click the *✅ Click here to Verify* button\\.`,
+            {
+              parse_mode: 'MarkdownV2',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '👥 Go to Group', url: config.GROUP_LINK }]
+                ]
+              }
+            }
+          );
+        } else {
+          await bot.sendMessage(userId,
+            `⚠️ Couldn't send the verification prompt\\. Please make sure the bot is an admin in the group and try again, or contact support\\.`,
             { parse_mode: 'MarkdownV2' }
           );
-          return;
         }
+        return;
+      }
 
-        // Both joined — auto-verify user
-        await User.upsertUser(userId, { isVerified: true });
-        logger.info(`[VERIFICATION] User @${username} (ID: ${userId}) auto-verified via group join confirmation.`);
+      // 1D. (deprecated — old "I've joined the group" button, redirect to new flow)
+      if (data === 'joined_group') {
+        await bot.answerCallbackQuery(id);
 
-        const successText = `✅ *VERIFICATION COMPLETE* ✅\n\n` +
-          `You've joined both the channel and the group 🎉\\!\n\n` +
-          `You are now a fully verified community member\\. Your DM menu is unlocked below\\!`;
-
-        try {
-          await bot.editMessageText(successText, {
-            chat_id: message.chat.id,
-            message_id: message.message_id,
-            parse_mode: 'MarkdownV2'
-          });
-        } catch (editErr) {
-          logger.warn(`[GROUP CB] editMessageText failed, falling back to sendMessage: ${editErr.message}`);
-          await bot.sendMessage(userId, successText, { parse_mode: 'MarkdownV2' });
-        }
-
-        // Send group success notice
-        const groupNotice = `🟢 *SECURITY CLEARANCE APPROVED* 🟢\n\n` +
-          `👋 Welcome @${esc(username)} to our trading circle\\!\n` +
-          `🔒 Verification passed successfully\\. You are now a fully approved community member\\!`;
-        await telegramService.sendMessage(GROUP_ID, groupNotice).catch(() => {});
-
-        // Send DM welcome tutorial
-        const dmWelcomeText = dmWelcomeTemplate(from.first_name);
-        const refLink = `https://t.me/${(await bot.getMe()).username}?start=ref_${userId}`;
-
-        const replyMarkup = {
-          inline_keyboard: [
-            [
-              { text: '📘 Getting Started', callback_data: 'get_started' },
-              { text: '📢 Official Channel', url: config.CHANNEL_LINK }
-            ],
-            [
-              { text: '💬 Support Ticket', callback_data: 'open_ticket' },
-              { text: '🌐 Website', url: config.WEBSITE_LINK }
-            ],
-            [
-              { text: '🏆 Leaderboard', callback_data: 'leaderboard' }
-            ]
-          ]
-        };
-
-        const dmSent = await telegramService.sendDirectMessage(userId,
-          dmWelcomeText + `\n🥇 *Your Referral Link:* \`${refLink}\``,
-          { reply_markup: replyMarkup }
+        await bot.sendMessage(userId,
+          `🔄 *The onboarding flow has been updated\\!*\n\n` +
+          `Please use /start again to go through the new verification process\\.`,
+          { parse_mode: 'MarkdownV2' }
         );
-
-        if (dmSent) {
-          const downloadMsg = `${header('Download BloomFX App', '📱')}` +
-            `To start copy\\-trading and manage your account, download the official BloomFX App from the link below:\n\n` +
-            `👉 [Download App](${config.POST_LINK})\n\n` +
-            `⚠️ *Only download from our official channel to protect your account*\\.`;
-
-          await telegramService.sendDirectMessage(userId, downloadMsg, {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: '📱 Download App', url: config.POST_LINK }
-                ]
-              ]
-            }
-          });
-        } else {
-          const dmInviteText = `💬 *${esc(from.first_name)}*, please open a private chat with me to get the welcome guide and app download link\\!\n\n` +
-            `👉 [Start Bot in DM](https://t.me/${(await bot.getMe()).username}?start=ref_${userId})`;
-          await telegramService.sendMessage(GROUP_ID, dmInviteText).catch(() => {});
-        }
         return;
       }
 
