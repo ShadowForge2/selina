@@ -63,25 +63,32 @@ module.exports = {
           ]
         };
 
-        await telegramService.sendDirectMessage(userId, dmWelcomeText + `\n🥇 *Your Referral Link:* \`${refLink}\``, {
-          reply_markup: replyMarkup
-        });
+        const dmSent = await telegramService.sendDirectMessage(userId,
+          dmWelcomeText + `\n🥇 *Your Referral Link:* \`${refLink}\``,
+          { reply_markup: replyMarkup }
+        );
 
-        // 2. Send instructions to download the BloomFX App from the official post
-        const downloadMsg = `${header('Download BloomFX App', '📱')}` +
-          `To start copy\\-trading and manage your account, download the official BloomFX App from the link below:\n\n` +
-          `👉 [Download App](${config.POST_LINK})\n\n` +
-          `⚠️ *Only download from our official channel to protect your account*\\.`;
+        if (dmSent) {
+          const downloadMsg = `${header('Download BloomFX App', '📱')}` +
+            `To start copy\\-trading and manage your account, download the official BloomFX App from the link below:\n\n` +
+            `👉 [Download App](${config.POST_LINK})\n\n` +
+            `⚠️ *Only download from our official channel to protect your account*\\.`;
 
-        await telegramService.sendDirectMessage(userId, downloadMsg, {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: '📱 Download App', url: config.POST_LINK }
+          await telegramService.sendDirectMessage(userId, downloadMsg, {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '📱 Download App', url: config.POST_LINK }
+                ]
               ]
-            ]
-          }
-        });
+            }
+          });
+        } else {
+          // DM failed — user hasn't started the bot. Send invite to DM in the group
+          const dmInviteText = `💬 *${esc(from.first_name)}*, please open a private chat with me to get the welcome guide and app download link\\!\n\n` +
+            `👉 [Start Bot in DM](https://t.me/${(await bot.getMe()).username}?start=ref_${userId})`;
+          await telegramService.sendMessage(message.chat.id, dmInviteText);
+        }
         return;
       }
 

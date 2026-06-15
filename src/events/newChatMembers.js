@@ -61,7 +61,7 @@ module.exports = {
               `To start copy\\-trading, download the official BloomFX App from the link below:\n\n` +
               `👉 [Download App](${config.POST_LINK})`;
 
-            await telegramService.sendMessage(chat.id, downloadText, {
+            const sent = await telegramService.sendMessage(chat.id, downloadText, {
               reply_markup: {
                 inline_keyboard: [
                   [
@@ -70,9 +70,13 @@ module.exports = {
                 ]
               }
             });
-            logger.info(`[DOWNLOAD] Sent app download link to group for new member @${username || firstName}`);
+            if (sent) {
+              logger.info(`[DOWNLOAD] Sent app download link to group for new member @${username || firstName}`);
+            } else {
+              logger.warn(`[DOWNLOAD] Could not send download link to group for new member @${username || firstName} — sendMessage returned null`);
+            }
           } catch (dlErr) {
-            logger.error(`[DOWNLOAD] Failed to send download link for new member ${userId}:`, dlErr.message);
+            logger.error(`[DOWNLOAD] Failed to send download link for new member ${userId}:`, dlErr?.message || dlErr || 'Unknown error');
           }
         }, 2000); // 2-second delay so it arrives after the welcome text
 
