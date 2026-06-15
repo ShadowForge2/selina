@@ -51,45 +51,46 @@ function startBot() {
     });
 
     // Auto-recover from polling errors (e.g. 409 Conflict during deploy overlap)
-    // CRITICAL: isRestarting guard prevents cascading retry loops when 409 errors
-    // arrive in rapid bursts (10+/sec). Only ONE retry is ever pending at a time.
+    // Uses timestamp-based debounce to ignore stale error events that accumulate
+    // during cooldown and fire after restart completes.
     let pollRetries = 0;
-    let isRestarting = false;
+    let lastRestartTime = 0;
     const MAX_POLL_RETRIES = 10;
+    const RESTART_DEBOUNCE_MS = 8000; // ignore errors within 8s of a successful restart
 
     bot.on('polling_error', (error) => {
-      logger.error(`Telegram Polling Error: ${error.message}`);
+      const now = Date.now();
 
-      // Guard: if a restart is already scheduled/running, ignore this event
-      if (isRestarting) return;
+      // Ignore stale events that fired shortly after a successful restart
+      if (now - lastRestartTime < RESTART_DEBOUNCE_MS) return;
 
       if (pollRetries >= MAX_POLL_RETRIES) {
         logger.error('Max polling restart attempts reached. Will not retry.');
         return;
       }
 
-      isRestarting = true;
       pollRetries++;
+      logger.error(`Telegram Polling Error: ${error.message}`);
 
-      // For 409 Conflict: wait 35s so the competing instance's 30s long-poll
-      // timeout expires before we reconnect. For other errors: exponential backoff.
+      // For 409: use progressive cooldown (35s, 70s, 105s...) so competing
+      // instances eventually time out. For other errors: exponential backoff.
       const is409 = error.message && error.message.includes('409');
-      const delay = is409 ? 35000 : Math.min(pollRetries * 5000, 30000);
+      const delay = is409
+        ? Math.min(pollRetries * 35000, 180000)
+        : Math.min(pollRetries * 5000, 30000);
 
       logger.info(`Restarting polling in ${delay / 1000}s (attempt ${pollRetries}/${MAX_POLL_RETRIES})${is409 ? ' [409 cooldown]' : ''}...`);
 
       setTimeout(async () => {
         try {
-          // Stop any lingering poll session before starting a new one
           await bot.stopPolling({ cancel: true }).catch(() => {});
-          await new Promise(r => setTimeout(r, 2000)); // brief settle delay
+          await new Promise(r => setTimeout(r, 2000));
           await bot.startPolling();
           pollRetries = 0;
-          isRestarting = false;
+          lastRestartTime = Date.now();
           logger.info('Polling restarted successfully.');
         } catch (err) {
           logger.error(`Failed to restart polling: ${err.message}`);
-          isRestarting = false; // Allow next error event to try again
         }
       }, delay);
     });
