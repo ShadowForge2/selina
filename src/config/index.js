@@ -16,6 +16,7 @@ const config = {
     .filter(id => !isNaN(id)),
   
   CHANNEL_ID: process.env.CHANNEL_ID || '',
+  GROUP_ID: process.env.GROUP_ID || '',
   
   SUPPORT_LINK: process.env.SUPPORT_LINK || 'https://t.me/CPBloomFXSupport',
   CHANNEL_LINK: process.env.CHANNEL_LINK || 'https://t.me/CPBloomFXChannel',

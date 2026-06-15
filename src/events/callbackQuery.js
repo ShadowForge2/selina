@@ -96,15 +96,22 @@ module.exports = {
       if (data === 'joined_channel') {
         await bot.answerCallbackQuery(id);
 
-        const CHANNEL_ID = -1003952364322;
+        const CHANNEL_ID = config.CHANNEL_ID ? parseInt(config.CHANNEL_ID, 10) : -1003952364322;
         let inChannel = false;
+        let memberCheckFailed = false;
 
         try {
           const channelMember = await bot.getChatMember(CHANNEL_ID, userId);
           inChannel = ['member', 'administrator', 'creator'].includes(channelMember.status);
-        } catch (_) {}
+        } catch (checkErr) {
+          // Bot may not be admin in channel, or user isn't found via API.
+          // Log the real error instead of silently blocking the user.
+          logger.warn(`[CHANNEL CHECK] Could not verify channel membership for user ${userId}: ${checkErr.message}. Proceeding anyway.`);
+          memberCheckFailed = true;
+          inChannel = true; // Fail-open: trust the user if the check can't be completed
+        }
 
-        if (!inChannel) {
+        if (!inChannel && !memberCheckFailed) {
           await bot.sendMessage(userId,
             `⚠️ *You haven\\'t joined the channel yet\\!*\n\n` +
             `Please tap the *📢 Join Channel* button above, join the channel, then click *"I've joined"* again\\.`,
@@ -115,8 +122,8 @@ module.exports = {
 
         // Step 2: Join Group
         const step2Text = `👥 *STEP 2: JOIN OUR GROUP* 👥\n\n` +
-          `You've joined the channel ✅\\! Now join our trading group to connect with fellow traders\\.\n\n` +
-          `👉 Tap the button below, then click *"I've joined"* to continue\\.`;
+          `You've joined the channel ✅\\! Now join our trading group to connect with fellow traders\.\n\n` +
+          `👉 Tap the button below, then click ✅ *I've joined* to continue\.`;
 
         try {
           await bot.editMessageText(step2Text, {
@@ -168,15 +175,21 @@ module.exports = {
       if (data === 'joined_group') {
         await bot.answerCallbackQuery(id);
 
-        const GROUP_ID = -1003978624961;
+        const GROUP_ID = config.GROUP_ID ? parseInt(config.GROUP_ID, 10) : -1003978624961;
         let inGroup = false;
+        let groupCheckFailed = false;
 
         try {
           const groupMember = await bot.getChatMember(GROUP_ID, userId);
           inGroup = ['member', 'administrator', 'creator'].includes(groupMember.status);
-        } catch (_) {}
+        } catch (checkErr) {
+          // Bot may not be admin in group, or the user isn't resolvable yet.
+          logger.warn(`[GROUP CHECK] Could not verify group membership for user ${userId}: ${checkErr.message}. Proceeding anyway.`);
+          groupCheckFailed = true;
+          inGroup = true; // Fail-open: trust the user if the check can't be completed
+        }
 
-        if (!inGroup) {
+        if (!inGroup && !groupCheckFailed) {
           await bot.sendMessage(userId,
             `⚠️ *You haven\\'t joined the group yet\\!*\n\n` +
             `Please tap the *👥 Join Group* button above, join the group, then click *"I've joined"* again\\.`,
@@ -187,8 +200,8 @@ module.exports = {
 
         // Both joined — tell user to verify in group
         const successText = `✅ *ALL SET\\! GO VERIFY IN GROUP* ✅\n\n` +
-          `You've joined both the channel and the group 🎉\\! \n\n` +
-          `📌 *Final Step:* Head over to the group @CPBloomFX23 and click the *"✅ Click here to Verify"* button in the welcome message to complete your verification\\.\n\n` +
+          `You've joined both the channel and the group 🎉\\!\n\n` +
+          `📌 *Final Step:* Head over to the group @CPBloomFX23 and click the ✅ *Click here to Verify* button in the welcome message to complete your verification\.\n\n` +
           `Once verified, your DM menu will be unlocked automatically\\!`;
 
         try {
