@@ -3,7 +3,7 @@ const path = require('path');
 const { User } = require('../database/models/User');
 const { Stat } = require('../database/models/Stat');
 const telegramService = require('../services/telegramService');
-const { welcomeTemplate, apkInstructionsTemplate, esc } = require('../utils/formatter');
+const { welcomeTemplate, apkInstructionsTemplate, esc, header } = require('../utils/formatter');
 const logger = require('../utils/logger');
 const config = require('../config');
 
