@@ -50,6 +50,28 @@ function startBot() {
       logger.error('Failed to query bot user details during startup:', err.message);
     });
 
+    // Auto-recover from polling errors (e.g. 409 Conflict during deploy overlap)
+    let pollRetries = 0;
+    const MAX_POLL_RETRIES = 10;
+    bot.on('polling_error', (error) => {
+      logger.error(`Telegram Polling Error: ${error.message}`);
+      if (pollRetries < MAX_POLL_RETRIES) {
+        pollRetries++;
+        const delay = Math.min(pollRetries * 3000, 30000);
+        logger.info(`Restarting polling in ${delay / 1000}s (attempt ${pollRetries}/${MAX_POLL_RETRIES})...`);
+        setTimeout(() => {
+          bot.startPolling().then(() => {
+            pollRetries = 0;
+            logger.info('Polling restarted successfully.');
+          }).catch(err => {
+            logger.error(`Failed to restart polling: ${err.message}`);
+          });
+        }, delay);
+      } else {
+        logger.error('Max polling restart attempts reached. Will not retry.');
+      }
+    });
+
     // Handle process events to clean up on shutdown
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
