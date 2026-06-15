@@ -55,19 +55,21 @@ module.exports = {
 
       // Step 1: Join Channel first (sequential onboarding)
       const step1Text = `📢 *STEP 1: JOIN OUR CHANNEL* 📢\n\n` +
-        `Welcome to **CPBloomFX**, ${esc(firstName)}\\! 🎉\n\n` +
-        `First, join our official channel to get live trade updates and announcements\\.\n\n` +
-        `👉 Tap the button below, then click *"I've joined"* to continue\\.\n\n` +
+        `Welcome to *CPBloomFX*, ${esc(firstName)}\\! 🎉\n\n` +
+        `First, join our official channel to get live trade updates and announcements\.\n\n` +
+        `👉 Tap the button below, then click *"I've joined"* to continue\.\n\n` +
         `🥇 *Your Referral Link:* \`${refLink}\``;
 
-      await telegramService.sendMessage(userId, step1Text, {
+      await bot.sendMessage(userId, step1Text, {
+        parse_mode: 'MarkdownV2',
+        disable_web_page_preview: true,
         reply_markup: {
           inline_keyboard: [
             [
               { text: '📢 Join Channel', url: config.CHANNEL_LINK }
             ],
             [
-              { text: '✅ I\'ve joined', callback_data: 'joined_channel' }
+              { text: "✅ I've joined", callback_data: 'joined_channel' }
             ]
           ]
         }

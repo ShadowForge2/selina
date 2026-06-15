@@ -113,8 +113,8 @@ module.exports = {
 
         if (!inChannel && !memberCheckFailed) {
           await bot.sendMessage(userId,
-            `⚠️ *You haven\\'t joined the channel yet\\!*\n\n` +
-            `Please tap the *📢 Join Channel* button above, join the channel, then click *"I've joined"* again\\.`,
+            `⚠️ You haven't joined the channel yet\!\n\n` +
+            `Please tap the 📢 Join Channel button above, join the channel, then click "I've joined" again\.`,
             { parse_mode: 'MarkdownV2' }
           );
           return;
@@ -141,7 +141,8 @@ module.exports = {
               ]
             }
           });
-        } catch (e) {
+        } catch (editErr) {
+          logger.warn(`[CHANNEL CB] editMessageText failed, falling back to sendMessage: ${editErr.message}`);
           await bot.sendMessage(userId, step2Text, {
             parse_mode: 'MarkdownV2',
             reply_markup: {
@@ -150,7 +151,7 @@ module.exports = {
                   { text: '👥 Join Group', url: config.GROUP_LINK }
                 ],
                 [
-                  { text: '✅ I\'ve joined', callback_data: 'joined_group' }
+                  { text: "✅ I've joined", callback_data: 'joined_group' }
                 ]
               ]
             }
@@ -191,8 +192,8 @@ module.exports = {
 
         if (!inGroup && !groupCheckFailed) {
           await bot.sendMessage(userId,
-            `⚠️ *You haven\\'t joined the group yet\\!*\n\n` +
-            `Please tap the *👥 Join Group* button above, join the group, then click *"I've joined"* again\\.`,
+            `⚠️ You haven't joined the group yet\!\n\n` +
+            `Please tap the 👥 Join Group button above, join the group, then click "I've joined" again\.`,
             { parse_mode: 'MarkdownV2' }
           );
           return;
@@ -217,7 +218,8 @@ module.exports = {
               ]
             }
           });
-        } catch (e) {
+        } catch (editErr) {
+          logger.warn(`[GROUP CB] editMessageText failed, falling back to sendMessage: ${editErr.message}`);
           await bot.sendMessage(userId, successText, {
             parse_mode: 'MarkdownV2',
             reply_markup: {
