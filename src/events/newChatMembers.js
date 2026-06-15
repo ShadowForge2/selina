@@ -76,7 +76,8 @@ module.exports = {
               logger.warn(`[DOWNLOAD] Could not send download link to group for new member @${username || firstName} — sendMessage returned null`);
             }
           } catch (dlErr) {
-            logger.error(`[DOWNLOAD] Failed to send download link for new member ${userId}:`, dlErr?.message || dlErr || 'Unknown error');
+            const dlErrMsg = dlErr?.message || (typeof dlErr === 'object' ? JSON.stringify(dlErr) : String(dlErr)) || 'Unknown error';
+            logger.error(`[DOWNLOAD] Failed to send download link for new member ${userId}: ${dlErrMsg}`);
           }
         }, 2000); // 2-second delay so it arrives after the welcome text
 

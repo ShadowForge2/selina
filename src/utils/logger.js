@@ -3,22 +3,26 @@ const path = require('path');
 
 // Define log format
 const logFormat = winston.format.combine(
+  winston.format.splat(),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.printf(({ timestamp, level, message, ...metadata }) => {
     let msg = `[${timestamp}] [${level.toUpperCase()}]: ${message}`;
-    if (Object.keys(metadata).length > 0 && level !== 'info' && level !== 'warn') {
-      msg += ` | ${JSON.stringify(metadata)}`;
-    }
+    const rest = Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : '';
+    if (rest) msg += ` | ${rest}`;
     return msg;
   })
 );
 
 // Colorized format for terminal
 const consoleFormat = winston.format.combine(
+  winston.format.splat(),
   winston.format.colorize(),
   winston.format.timestamp({ format: 'HH:mm:ss' }),
-  winston.format.printf(({ timestamp, level, message }) => {
-    return `\x1b[90m[${timestamp}]\x1b[0m ${level}: ${message}`;
+  winston.format.printf(({ timestamp, level, message, ...metadata }) => {
+    let msg = `\x1b[90m[${timestamp}]\x1b[0m ${level}: ${message}`;
+    const rest = Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : '';
+    if (rest) msg += ` | ${rest}`;
+    return msg;
   })
 );
 
