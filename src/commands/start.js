@@ -53,24 +53,21 @@ module.exports = {
       const botInfo = await bot.getMe();
       const refLink = `https://t.me/${botInfo.username}?start=ref_${userId}`;
 
-      // Step 1: Verified + Join Group/Channel prompt
-      const step1Text = `✅ *VERIFIED SUCCESSFULLY* ✅\n\n` +
+      // Step 1: Join Channel first (sequential onboarding)
+      const step1Text = `📢 *STEP 1: JOIN OUR CHANNEL* 📢\n\n` +
         `Welcome to **CPBloomFX**, ${esc(firstName)}\\! 🎉\n\n` +
-        `📌 *Step 1:* Join our community channels below:\n\n` +
-        `👥 **Join the Group** \\- chat with fellow traders\n` +
-        `📢 **Join the Channel** \\- get official updates\n\n` +
-        `👉 Tap the buttons below to join, then click *"I've Joined"* to proceed\\!\n\n` +
+        `First, join our official channel to get live trade updates and announcements\\.\n\n` +
+        `👉 Tap the button below, then click *"I've joined"* to continue\\.\n\n` +
         `🥇 *Your Referral Link:* \`${refLink}\``;
 
       await telegramService.sendMessage(userId, step1Text, {
         reply_markup: {
           inline_keyboard: [
             [
-              { text: '👥 Join Group', url: config.GROUP_LINK },
               { text: '📢 Join Channel', url: config.CHANNEL_LINK }
             ],
             [
-              { text: '✅ I\'ve joined both', callback_data: 'joined_channels' }
+              { text: '✅ I\'ve joined', callback_data: 'joined_channel' }
             ]
           ]
         }

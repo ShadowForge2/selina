@@ -92,90 +92,130 @@ module.exports = {
         return;
       }
 
-      // 1B. USER CONFIRMED JOINING GROUP + CHANNEL
-      if (data === 'joined_channels') {
+      // 1B. USER CONFIRMED JOINING CHANNEL (Step 1)
+      if (data === 'joined_channel') {
         await bot.answerCallbackQuery(id);
 
-        // Verify membership in group and channel
-        const GROUP_ID = -1003978624961;
         const CHANNEL_ID = -1003952364322;
-        let inGroup = false;
         let inChannel = false;
-
-        try {
-          const groupMember = await bot.getChatMember(GROUP_ID, userId);
-          inGroup = ['member', 'administrator', 'creator'].includes(groupMember.status);
-        } catch (_) {}
 
         try {
           const channelMember = await bot.getChatMember(CHANNEL_ID, userId);
           inChannel = ['member', 'administrator', 'creator'].includes(channelMember.status);
         } catch (_) {}
 
-        if (!inGroup || !inChannel) {
-          const missing = [];
-          if (!inGroup) missing.push('👥 **Group** \\(@CPBloomFX23\\)');
-          if (!inChannel) missing.push('📢 **Channel** \\(@cpbloomfxofficialtelegram\\)');
-
+        if (!inChannel) {
           await bot.sendMessage(userId,
-            `⚠️ *You haven\\'t joined all required channels yet\\!*\n\n` +
-            `Please join the following and try again:\n${missing.join('\n')}\n\n` +
-            `👉 Tap the *"I\\'ve joined both"* button again after joining\\.`,
+            `⚠️ *You haven\\'t joined the channel yet\\!*\n\n` +
+            `Please tap the *📢 Join Channel* button above, join the channel, then click *"I've joined"* again\\.`,
             { parse_mode: 'MarkdownV2' }
           );
           return;
         }
 
+        // Step 2: Join Group
+        const step2Text = `👥 *STEP 2: JOIN OUR GROUP* 👥\n\n` +
+          `You've joined the channel ✅\\! Now join our trading group to connect with fellow traders\\.\n\n` +
+          `👉 Tap the button below, then click *"I've joined"* to continue\\.`;
+
         try {
-          await bot.editMessageText(
-            `✅ You're all set! 🎉\n\n<b>Download the App below:</b>`,
-            {
-              chat_id: message.chat.id,
-              message_id: message.message_id,
-              parse_mode: 'HTML',
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    { text: '📱 Download App', url: config.POST_LINK }
-                  ]
+          await bot.editMessageText(step2Text, {
+            chat_id: message.chat.id,
+            message_id: message.message_id,
+            parse_mode: 'MarkdownV2',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '👥 Join Group', url: config.GROUP_LINK }
+                ],
+                [
+                  { text: '✅ I\'ve joined', callback_data: 'joined_group' }
                 ]
-              }
+              ]
             }
-          );
+          });
         } catch (e) {
-          await bot.sendMessage(userId,
-            `✅ You're all set! 🎉\n\n<b>Download the App below:</b>`,
-            {
-              parse_mode: 'HTML',
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    { text: '📱 Download App', url: config.POST_LINK }
-                  ]
+          await bot.sendMessage(userId, step2Text, {
+            parse_mode: 'MarkdownV2',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '👥 Join Group', url: config.GROUP_LINK }
+                ],
+                [
+                  { text: '✅ I\'ve joined', callback_data: 'joined_group' }
                 ]
-              }
+              ]
             }
+          });
+        }
+        return;
+      }
+
+      // 1B-OLD. Legacy handler for old "I've joined both" button
+      if (data === 'joined_channels') {
+        await bot.answerCallbackQuery(id);
+
+        await bot.sendMessage(userId,
+          `🔄 *The onboarding flow has been updated\\!*\n\n` +
+          `Please use /start again to go through the new step\\-by\\-step process\\.`,
+          { parse_mode: 'MarkdownV2' }
+        );
+        return;
+      }
+
+      // 1C. USER CONFIRMED JOINING GROUP (Step 2)
+      if (data === 'joined_group') {
+        await bot.answerCallbackQuery(id);
+
+        const GROUP_ID = -1003978624961;
+        let inGroup = false;
+
+        try {
+          const groupMember = await bot.getChatMember(GROUP_ID, userId);
+          inGroup = ['member', 'administrator', 'creator'].includes(groupMember.status);
+        } catch (_) {}
+
+        if (!inGroup) {
+          await bot.sendMessage(userId,
+            `⚠️ *You haven\\'t joined the group yet\\!*\n\n` +
+            `Please tap the *👥 Join Group* button above, join the group, then click *"I've joined"* again\\.`,
+            { parse_mode: 'MarkdownV2' }
           );
+          return;
         }
 
-        await bot.sendMessage(userId, `🔹 <b>What would you like to do next?</b> 🔹`, {
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: '📘 Getting Started', callback_data: 'get_started' },
-                { text: '📢 Channel', url: config.CHANNEL_LINK }
-              ],
-              [
-                { text: '💬 Support Ticket', callback_data: 'open_ticket' },
-                { text: '🌐 Website', url: config.WEBSITE_LINK }
-              ],
-              [
-                { text: '🏆 Leaderboard', callback_data: 'leaderboard' }
+        // Both joined — tell user to verify in group
+        const successText = `✅ *ALL SET\\! GO VERIFY IN GROUP* ✅\n\n` +
+          `You've joined both the channel and the group 🎉\\! \n\n` +
+          `📌 *Final Step:* Head over to the group @CPBloomFX23 and click the *"✅ Click here to Verify"* button in the welcome message to complete your verification\\.\n\n` +
+          `Once verified, your DM menu will be unlocked automatically\\!`;
+
+        try {
+          await bot.editMessageText(successText, {
+            chat_id: message.chat.id,
+            message_id: message.message_id,
+            parse_mode: 'MarkdownV2',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '👥 Go to Group', url: config.GROUP_LINK }
+                ]
               ]
-            ]
-          }
-        });
+            }
+          });
+        } catch (e) {
+          await bot.sendMessage(userId, successText, {
+            parse_mode: 'MarkdownV2',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '👥 Go to Group', url: config.GROUP_LINK }
+                ]
+              ]
+            }
+          });
+        }
         return;
       }
 
