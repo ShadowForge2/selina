@@ -113,8 +113,8 @@ module.exports = {
 
         if (!inChannel && !memberCheckFailed) {
           await bot.sendMessage(userId,
-            `⚠️ You haven't joined the channel yet\!\n\n` +
-            `Please tap the 📢 Join Channel button above, join the channel, then click "I've joined" again\.`,
+            `⚠️ You haven't joined the channel yet\\!\n\n` +
+            `Please tap the 📢 Join Channel button above, join the channel, then click "I've joined" again\\.`,
             { parse_mode: 'MarkdownV2' }
           );
           return;
@@ -122,8 +122,8 @@ module.exports = {
 
         // Step 2: Join Group
         const step2Text = `👥 *STEP 2: JOIN OUR GROUP* 👥\n\n` +
-          `You've joined the channel ✅\\! Now join our trading group to connect with fellow traders\.\n\n` +
-          `👉 Tap the button below, then click ✅ *I've joined* to continue\.`;
+          `You've joined the channel ✅\\! Now join our trading group to connect with fellow traders\\.\n\n` +
+          `👉 Tap the button below, then click ✅ *I've joined* to continue\\.`;
 
         try {
           await bot.editMessageText(step2Text, {
@@ -192,44 +192,82 @@ module.exports = {
 
         if (!inGroup && !groupCheckFailed) {
           await bot.sendMessage(userId,
-            `⚠️ You haven't joined the group yet\!\n\n` +
-            `Please tap the 👥 Join Group button above, join the group, then click "I've joined" again\.`,
+            `⚠️ You haven't joined the group yet\\!\n\n` +
+            `Please tap the 👥 Join Group button above, join the group, then click "I've joined" again\\.`,
             { parse_mode: 'MarkdownV2' }
           );
           return;
         }
 
-        // Both joined — tell user to verify in group
-        const successText = `✅ *ALL SET\\! GO VERIFY IN GROUP* ✅\n\n` +
+        // Both joined — auto-verify user
+        await User.upsertUser(userId, { isVerified: true });
+        logger.info(`[VERIFICATION] User @${username} (ID: ${userId}) auto-verified via group join confirmation.`);
+
+        const successText = `✅ *VERIFICATION COMPLETE* ✅\n\n` +
           `You've joined both the channel and the group 🎉\\!\n\n` +
-          `📌 *Final Step:* Head over to the group @CPBloomFX23 and click the ✅ *Click here to Verify* button in the welcome message to complete your verification\.\n\n` +
-          `Once verified, your DM menu will be unlocked automatically\\!`;
+          `You are now a fully verified community member\\. Your DM menu is unlocked below\\!`;
 
         try {
           await bot.editMessageText(successText, {
             chat_id: message.chat.id,
             message_id: message.message_id,
-            parse_mode: 'MarkdownV2',
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: '👥 Go to Group', url: config.GROUP_LINK }
-                ]
-              ]
-            }
+            parse_mode: 'MarkdownV2'
           });
         } catch (editErr) {
           logger.warn(`[GROUP CB] editMessageText failed, falling back to sendMessage: ${editErr.message}`);
-          await bot.sendMessage(userId, successText, {
-            parse_mode: 'MarkdownV2',
+          await bot.sendMessage(userId, successText, { parse_mode: 'MarkdownV2' });
+        }
+
+        // Send group success notice
+        const groupNotice = `🟢 *SECURITY CLEARANCE APPROVED* 🟢\n\n` +
+          `👋 Welcome @${esc(username)} to our trading circle\\!\n` +
+          `🔒 Verification passed successfully\\. You are now a fully approved community member\\!`;
+        await telegramService.sendMessage(GROUP_ID, groupNotice).catch(() => {});
+
+        // Send DM welcome tutorial
+        const dmWelcomeText = dmWelcomeTemplate(from.first_name);
+        const refLink = `https://t.me/${(await bot.getMe()).username}?start=ref_${userId}`;
+
+        const replyMarkup = {
+          inline_keyboard: [
+            [
+              { text: '📘 Getting Started', callback_data: 'get_started' },
+              { text: '📢 Official Channel', url: config.CHANNEL_LINK }
+            ],
+            [
+              { text: '💬 Support Ticket', callback_data: 'open_ticket' },
+              { text: '🌐 Website', url: config.WEBSITE_LINK }
+            ],
+            [
+              { text: '🏆 Leaderboard', callback_data: 'leaderboard' }
+            ]
+          ]
+        };
+
+        const dmSent = await telegramService.sendDirectMessage(userId,
+          dmWelcomeText + `\n🥇 *Your Referral Link:* \`${refLink}\``,
+          { reply_markup: replyMarkup }
+        );
+
+        if (dmSent) {
+          const downloadMsg = `${header('Download BloomFX App', '📱')}` +
+            `To start copy\\-trading and manage your account, download the official BloomFX App from the link below:\n\n` +
+            `👉 [Download App](${config.POST_LINK})\n\n` +
+            `⚠️ *Only download from our official channel to protect your account*\\.`;
+
+          await telegramService.sendDirectMessage(userId, downloadMsg, {
             reply_markup: {
               inline_keyboard: [
                 [
-                  { text: '👥 Go to Group', url: config.GROUP_LINK }
+                  { text: '📱 Download App', url: config.POST_LINK }
                 ]
               ]
             }
           });
+        } else {
+          const dmInviteText = `💬 *${esc(from.first_name)}*, please open a private chat with me to get the welcome guide and app download link\\!\n\n` +
+            `👉 [Start Bot in DM](https://t.me/${(await bot.getMe()).username}?start=ref_${userId})`;
+          await telegramService.sendMessage(GROUP_ID, dmInviteText).catch(() => {});
         }
         return;
       }
