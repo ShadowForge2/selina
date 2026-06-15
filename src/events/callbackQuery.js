@@ -71,7 +71,7 @@ module.exports = {
         const downloadMsg = `${header('Download BloomFX App', '📱')}` +
           `To start copy\\-trading and manage your account, download the official BloomFX App from the link below:\n\n` +
           `👉 [Download App](${config.POST_LINK})\n\n` +
-          `⚠️ _Only download from our official channel to protect your account._`;
+          `⚠️ *Only download from our official channel to protect your account*\\.`;
 
         await telegramService.sendDirectMessage(userId, downloadMsg, {
           reply_markup: {
