@@ -43,7 +43,7 @@ async function processVerificationCheck(msg) {
     const reminderText = `⚠️ *CPBloomFX Verification Required* ⚠️\n\n` +
       `You are currently restricted from posting in *${esc(chat.title)}*\\.\n` +
       `Please complete the security captcha verification by clicking the *Verify* button in the group welcome message\\!\n\n` +
-      `⏳ _Note: Unverified members are auto-kicked after a brief period\\._`;
+      `⏳ _Note: Unverified members are auto\\-kicked after a brief period\\._`;
     
     await telegramService.sendDirectMessage(from.id, reminderText);
     return false;
