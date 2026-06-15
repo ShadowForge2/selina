@@ -56,9 +56,9 @@ module.exports = {
       // Step 1: Join Channel first (sequential onboarding)
       const step1Text = `📢 *STEP 1: JOIN OUR CHANNEL* 📢\n\n` +
         `Welcome to *CPBloomFX*, ${esc(firstName)}\\! 🎉\n\n` +
-        `First, join our official channel to get live trade updates and announcements\.\n\n` +
-        `👉 Tap the button below, then click *"I've joined"* to continue\.\n\n` +
-        `🥇 *Your Referral Link:* \`${refLink}\``;
+        `First, join our official channel to get live trade updates and announcements\\.\n\n` +
+        `👉 Tap the button below, then click *"I've joined"* to continue\\.\n\n` +
+        `🥇 *Your Referral Link:* \`${esc(refLink)}\``;
 
       await bot.sendMessage(userId, step1Text, {
         parse_mode: 'MarkdownV2',
