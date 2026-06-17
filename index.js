@@ -1,8 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const config = require('./src/config');
-const { connectDatabase } = require('./src/database/mongoose');
-const { startBot } = require('./bot');
+const { connectDatabase, isDbConnected } = require('./src/database/mongoose');
+const { startBot, getBotInstance } = require('./bot');
+const telegramService = require('./src/services/telegramService');
+const autoPostService = require('./src/services/autoPostService');
+const groupPromoService = require('./src/services/groupPromoService');
 const { User } = require('./src/database/models/User');
 const { Ticket } = require('./src/database/models/Ticket');
 const { Stat } = require('./src/database/models/Stat');
@@ -24,13 +27,79 @@ async function bootstrap() {
 
   // 3. Setup Express Routes
   
-  // Healthcheck Route
+  // ── Health Check Endpoints ─────────────────────────────────────────────
+
+  // Liveness probe — server is alive
+  app.get('/health/live', (req, res) => {
+    res.status(200).json({
+      status: 'alive',
+      uptimeSeconds: process.uptime(),
+      timestamp: new Date()
+    });
+  });
+
+  // Readiness probe — critical services are ready
+  app.get('/health/ready', (req, res) => {
+    const dbReady = isDbConnected();
+    const botRunning = !!getBotInstance();
+
+    const ready = dbReady && botRunning;
+
+    res.status(ready ? 200 : 503).json({
+      status: ready ? 'ready' : 'not ready',
+      checks: {
+        database: dbReady ? 'connected' : 'disconnected',
+        telegramBot: botRunning ? 'running' : 'stopped'
+      },
+      timestamp: new Date()
+    });
+  });
+
+  // Detailed health dashboard
   app.get('/health', (req, res) => {
+    const bot = getBotInstance();
+    const botRunning = !!bot;
+    const dbReady = isDbConnected();
+
     res.json({
       status: 'active',
       timestamp: new Date(),
-      botConfigured: !!config.BOT_TOKEN,
-      databaseUrl: config.DATABASE_URL ? 'Connected' : 'Offline Mode'
+      uptimeSeconds: process.uptime(),
+      services: {
+        database: {
+          status: dbReady ? 'connected' : 'offline',
+          url: config.DATABASE_URL ? 'configured' : 'not configured'
+        },
+        telegramBot: {
+          status: botRunning ? 'running' : 'stopped',
+          configured: !!config.BOT_TOKEN,
+          polling: botRunning ? bot.isPolling() : false
+        },
+        autoPoster: {
+          running: autoPostService.timer !== null,
+          channelId: config.CHANNEL_ID || 'not configured'
+        },
+        groupPromo: {
+          running: groupPromoService.timer !== null
+        }
+      },
+      config: {
+        adminsConfigured: config.ADMIN_IDS.length,
+        warnLimit: config.WARN_LIMIT,
+        verificationTimeoutMs: config.VERIFICATION_TIMEOUT_MS,
+        geminiEnabled: !!config.GEMINI_API_KEY,
+        supportLink: config.SUPPORT_LINK
+      },
+      system: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        memoryUsageMb: {
+          rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
+          heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
+        },
+        cpuLoad: process.cpuUsage ? process.cpuUsage() : null
+      }
     });
   });
 
