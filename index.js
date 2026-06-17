@@ -17,6 +17,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Request logger — visible in Render logs
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info(`${req.method} ${req.originalUrl} → ${res.statusCode} (${duration}ms)`);
+  });
+  next();
+});
+
 // Bootstrapping function
 async function bootstrap() {
   // 1. Setup Database Connection
