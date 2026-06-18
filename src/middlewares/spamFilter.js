@@ -21,7 +21,7 @@ async function processSpamFilter(msg) {
   // 1. Skip checks if private DM or if user is administrator
   if (chat.type === 'private') return true;
   
-  const isAdmin = await telegramService.isAdmin(chat.id, from.id);
+  const isAdmin = await telegramService.isAdmin(chat.id, from.id, msg);
   if (isAdmin) return true;
 
   // Log message stats

@@ -134,17 +134,25 @@ class TelegramService {
 
   /**
    * Check if a Telegram user is an administrator in the group
+   * Accepts an optional msg object to cache the result and avoid redundant API calls
    */
-  async isAdmin(chatId, userId) {
+  async isAdmin(chatId, userId, msg = null) {
+    if (msg && msg._isAdmin !== undefined) return msg._isAdmin;
     if (!this.bot) return false;
     try {
       // Direct message is always considered authorized
-      if (chatId === userId) return true;
+      if (chatId === userId) {
+        if (msg) msg._isAdmin = true;
+        return true;
+      }
       
       const chatMember = await this.bot.getChatMember(chatId, userId);
-      return ['creator', 'administrator'].includes(chatMember.status);
+      const result = ['creator', 'administrator'].includes(chatMember.status);
+      if (msg) msg._isAdmin = result;
+      return result;
     } catch (error) {
       // If error (like user not found), return false
+      if (msg) msg._isAdmin = false;
       return false;
     }
   }

@@ -2,6 +2,7 @@ const { User } = require('../database/models/User');
 const { Ticket } = require('../database/models/Ticket');
 const { Stat } = require('../database/models/Stat');
 const telegramService = require('../services/telegramService');
+const logger = require('../utils/logger');
 const { header, keyVal, esc } = require('../utils/formatter');
 
 module.exports = {

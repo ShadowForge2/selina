@@ -50,7 +50,7 @@ async function handleCommand(msg, bot) {
     // Check if command is administrative only
     if (command.adminOnly) {
       const isConfigAdmin = config.ADMIN_IDS.includes(from.id);
-      const isGroupAdmin = await telegramService.isAdmin(chat.id, from.id);
+      const isGroupAdmin = await telegramService.isAdmin(chat.id, from.id, msg);
       
       if (!isConfigAdmin && !isGroupAdmin) {
         logger.warn(`[SECURITY] Restricting command /${cmdName} for unauthorized user @${from.username || from.first_name}`);

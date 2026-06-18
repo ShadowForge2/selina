@@ -1,5 +1,6 @@
 const { User } = require('../database/models/User');
 const telegramService = require('../services/telegramService');
+const logger = require('../utils/logger');
 const { esc } = require('../utils/formatter');
 
 module.exports = {

@@ -15,7 +15,7 @@ async function processVerificationCheck(msg) {
   if (chat.type === 'private') return true;
 
   // 2. Admins are auto-verified / bypass
-  const isAdmin = await telegramService.isAdmin(chat.id, from.id);
+  const isAdmin = await telegramService.isAdmin(chat.id, from.id, msg);
   if (isAdmin) return true;
 
   // 3. Fetch user status from database
