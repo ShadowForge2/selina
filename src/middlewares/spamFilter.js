@@ -89,9 +89,7 @@ async function handleViolation(chatId, userId, username, messageId, reason) {
 
     // 3. Check if user exceeded warn limit
     if (dbUser.warningCount >= config.WARN_LIMIT) {
-      // Get current restriction count and increment
-      const currentUser = await User.findByTelegramId(userId);
-      const restrictionCount = (currentUser ? currentUser.restrictionCount || 0 : 0) + 1;
+      const restrictionCount = (dbUser.restrictionCount || 0) + 1;
 
       // If restricted 3 times already, permanent ban
       if (restrictionCount >= 3) {

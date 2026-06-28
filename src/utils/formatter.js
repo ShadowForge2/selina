@@ -68,14 +68,16 @@ module.exports = {
   },
 
   // APK Download and Installation Instructions Template
-  apkInstructionsTemplate: () => {
+  apkInstructionsTemplate: (downloadUrl) => {
+    if (!downloadUrl) downloadUrl = 'https://c-pbloomfx-user-app-web.vercel.app/downloads/BloomFX-1.0.0.apk';
     return `${header('Download BloomFX App', '📱')}` +
       `To start copytrading and manage your financial deposits, download and install our official Android Application\\!\n\n` +
       `📥 *INSTALLATION INSTRUCTIONS:*\n` +
-      `1️⃣ Click the *📥 Download App APK* button below to fetch the installer\\.\n` +
+      `1️⃣ Click the button below to download the installer\\.\n` +
       `2️⃣ Open the downloaded file\\. If prompted, enable *"Install from Unknown Sources"* in your security settings\\.\n` +
       `3️⃣ Click *Install* and open the BloomFX App\\.\n` +
       `4️⃣ Register your trading account and connect to our automated MT4/MT5 CopyTrading node\\!\n\n` +
+      `👉 [Download BloomFX APK](${downloadUrl})\n\n` +
       `⚠️ *Note:* Only download the app installer from our official portals to protect your assets\\.`;
   }
 };

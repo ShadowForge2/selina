@@ -54,7 +54,7 @@ module.exports = {
         if (isRealQuestion(text)) {
           const mention = `[@${esc(from.username || from.first_name)}](tg://user?id=${from.id})`;
           const referral = `${mention}\n\n❓ *I couldn't find a direct answer to your question*\\.\n` +
-            `Please contact @${esc(config.SUPPORT_USERNAME)} for further assistance\\. They will be happy to help\\! 💬`;
+            `Please contact @${config.SUPPORT_USERNAME.replace(/_/g, '\\_')} for further assistance\\. They will be happy to help\\! 💬`;
           await telegramService.sendMessage(chat.id, referral);
           return;
         }
@@ -91,6 +91,7 @@ module.exports = {
           return;
         } catch (ticketBridgeErr) {
           logger.error('Failed to bridge ticket message to admins:', ticketBridgeErr.message);
+          await telegramService.sendDirectMessage(from.id, `❌ Failed to forward your message to support\\. Please try again later\\.`);
         }
       }
 

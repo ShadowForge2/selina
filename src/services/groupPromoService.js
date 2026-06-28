@@ -200,7 +200,7 @@ class GroupPromoService {
         `[${esc(m.user.first_name || 'User')}](tg://user?id=${m.user.id})`
       ).join(', ');
 
-      const fullText = `${promo}\n\n${mentions}\n\n📱 ${esc(config.POST_LINK)}`;
+      const fullText = `${promo}\n\n${mentions}\n\n📱 ${config.POST_LINK}`;
 
       await telegramService.sendMessage(this.groupId, fullText);
       logger.info(`Group promo posted (${randomIndex}/${ALL_MESSAGES.length})`);

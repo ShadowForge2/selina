@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const { User } = require('../database/models/User');
 const { Stat } = require('../database/models/Stat');
 const telegramService = require('../services/telegramService');
@@ -12,13 +10,23 @@ module.exports = {
   async execute(msg, bot) {
     const { chat, new_chat_members } = msg;
 
+    // Check if the adder is a chat admin (covers all admins, new or old)
+    let adderIsAdmin = false;
+    if (msg.from) {
+      try {
+        const admins = await bot.getChatAdministrators(chat.id);
+        adderIsAdmin = admins.some(a => a.user.id === msg.from.id);
+      } catch (_) {}
+    }
+
+    const botInfo = await bot.getMe();
+
     for (const member of new_chat_members) {
       // Skip if the bot itself is added to the group
-      const botInfo = await bot.getMe();
       if (member.id === botInfo.id) {
         logger.info(`Bot was added to chat ${chat.title} (ID: ${chat.id})`);
-        await telegramService.sendMessage(chat.id, `👋 Hello everyone\\! I am *CPBloomFX Community Assistant*\\.\\n\\n` +
-          `🔒 I am active and ready to manage this group\\. I will automatically verify new members, delete links, filter spam, and schedule auto-posts\\!\\n\\n` +
+        await telegramService.sendMessage(chat.id, `👋 Hello everyone\\! I am *CPBloomFX Community Assistant*\\.\n\n` +
+          `🔒 I am active and ready to manage this group\\. I will automatically verify new members, delete links, filter spam, and schedule auto-posts\\!\n\n` +
           `👮‍♂️ *Notice:* Please make sure to make me an *Administrator* with delete and restrict privileges so I can function properly\\.`);
         continue;
       }
@@ -26,11 +34,27 @@ module.exports = {
       const username = member.username || '';
       const firstName = member.first_name;
       const userId = member.id;
+      const addedByAdmin = msg.from && adderIsAdmin;
 
-      logger.join(username || firstName, userId, 'Group Entry');
+      logger.join(username || firstName, userId, addedByAdmin ? 'AdminAdded' : 'Group Entry');
       await Stat.incrementMetric('joinsCount');
 
       try {
+        if (addedByAdmin) {
+          // Admin added this user — skip verification, auto-verify
+          await User.upsertUser(userId, {
+            username,
+            firstName,
+            isVerified: true
+          });
+          await telegramService.sendMessage(chat.id,
+            `👋 Welcome *${esc(firstName)}*\\! You were added by an admin — you're all set\\.\n\n` +
+            `👉 Check the group for pinned messages and enjoy your stay\\!`
+          );
+          logger.info(`[ADMIN ADD] User @${username || firstName} auto-verified (added by admin ${msg.from.id})`);
+          continue;
+        }
+
         // 1. Save member in DB as unverified
         await User.upsertUser(userId, {
           username,
@@ -59,13 +83,13 @@ module.exports = {
           try {
             const downloadText = `${header('Download BloomFX App', '📱')}` +
               `To start copy\\-trading, download the official BloomFX App from the link below:\n\n` +
-              `👉 [Download App](${config.POST_LINK})`;
+              `👉 [Download APK](${config.APK_DOWNLOAD_URL})`;
 
             const sent = await telegramService.sendMessage(chat.id, downloadText, {
               reply_markup: {
                 inline_keyboard: [
                   [
-                    { text: '📱 Download App', url: config.POST_LINK }
+                    { text: '📱 Download APK', url: config.APK_DOWNLOAD_URL }
                   ]
                 ]
               }
@@ -98,9 +122,9 @@ module.exports = {
               if (kicked) {
                 await Stat.incrementMetric('kicksCount');
                 
-                const kickAlertText = `🚪 *COMMUNITY PROTECTION* 🚪\\n\\n` +
-                  `👤 *User:* @${esc(username || firstName)}\\n` +
-                  `⚠️ *Action:* *Kicked from Chat*\\n` +
+                const kickAlertText = `🚪 *COMMUNITY PROTECTION* 🚪\n\n` +
+                  `👤 *User:* @${esc(username || firstName)}\n` +
+                  `⚠️ *Action:* *Kicked from Chat*\n` +
                   `📝 *Reason:* Failed security verification check within ${timeoutSecs} seconds\\.`;
                 
                 await telegramService.sendMessage(chat.id, kickAlertText);

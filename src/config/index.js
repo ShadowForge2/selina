@@ -29,6 +29,7 @@ const config = {
   WARN_LIMIT: parseInt(process.env.WARN_LIMIT || '3', 10),
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   POST_LINK: process.env.POST_LINK || 'https://t.me/cpbloomfxofficialtelegram/5',
+  APK_DOWNLOAD_URL: process.env.APK_DOWNLOAD_URL || 'https://c-pbloomfx-user-app-web.vercel.app/downloads/BloomFX-1.0.0.apk',
   SUPPORT_USERNAME: process.env.SUPPORT_USERNAME || 'mia_malcovaofficialmanagement'
 };
 

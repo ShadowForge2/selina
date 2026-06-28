@@ -709,7 +709,7 @@ class AutoPostService {
   }
 
   /**
-   * Returns a random delay between 30 and 60 minutes (in milliseconds)
+   * Returns a random delay between 15 and 30 minutes (in milliseconds)
    */
   _getRandomDelay() {
     const minMs = 15 * 60 * 1000; // 15 minutes

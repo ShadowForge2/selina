@@ -1,3 +1,4 @@
+const { User } = require('../database/models/User');
 const telegramService = require('../services/telegramService');
 const logger = require('../utils/logger');
 const { esc } = require('../utils/formatter');
@@ -14,28 +15,39 @@ module.exports = {
     }
 
     try {
-      const admins = await bot.getChatAdministrators(chat.id);
+      const allUsers = await User.getAllUsers();
       const botInfo = await bot.getMe();
-      const botId = botInfo.id;
 
-      const taggable = admins.filter(a => a.user.id !== botId);
+      const taggable = allUsers.filter(u => u.userId !== botInfo.id);
 
-      let mentionText = '';
-      for (const member of taggable) {
-        const name = member.user.first_name || 'User';
-        mentionText += `👤 [${esc(name)}](tg://user?id=${member.user.id})\n`;
+      if (taggable.length === 0) {
+        return await telegramService.sendMessage(chat.id, `⚠️ No users found in the database to tag\\.`);
       }
 
-      const memberCount = await bot.getChatMemberCount(chat.id);
-      const customMsg = args.length > 0 ? `📢 ${args.join(' ')}` : '📢 Attention Everyone';
+      const batchSize = 30;
+      const customMsg = args.length > 0 ? args.join(' ') : 'Attention Everyone';
 
-      const fullText = `*${esc(customMsg)}*\n\n` +
-        `👥 *Total Members:* \`${memberCount}\`\n\n` +
-        `${mentionText}` +
-        `\n_🔔 All members please check the message above\\._`;
+      for (let i = 0; i < taggable.length; i += batchSize) {
+        const batch = taggable.slice(i, i + batchSize);
+        let mentionText = '';
+        for (const user of batch) {
+          const name = user.firstName || 'User';
+          mentionText += `👤 [${esc(name)}](tg://user?id=${user.userId})\n`;
+        }
 
-      await telegramService.sendMessage(chat.id, fullText);
-      logger.moderation(from.username || from.first_name, '', 'TAGALL', `Tagged ${taggable.length} visible members in group with ${memberCount} total`);
+        const header = i === 0
+          ? `*📢 ${esc(customMsg)}*\n\n`
+          : '';
+
+        const pageInfo = taggable.length > batchSize
+          ? `\n_(${i + 1}–${Math.min(i + batchSize, taggable.length)} of ${taggable.length})_`
+          : '';
+
+        await telegramService.sendMessage(chat.id, `${header}${mentionText}${pageInfo}`);
+        await new Promise(r => setTimeout(r, 1000));
+      }
+
+      logger.moderation(from.username || from.first_name, '', 'TAGALL', `Tagged ${taggable.length} members in ${Math.ceil(taggable.length / batchSize)} messages`);
     } catch (error) {
       logger.error('Failed executing tagall command:', error.message);
       await telegramService.sendMessage(chat.id, `❌ Error: ${esc(error.message)}`);

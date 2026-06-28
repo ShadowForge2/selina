@@ -3,7 +3,7 @@ const { Ticket } = require('../database/models/Ticket');
 const telegramService = require('../services/telegramService');
 const ticketService = require('../services/ticketService');
 const logger = require('../utils/logger');
-const { esc, header, DIVIDER, keyVal, dmWelcomeTemplate, apkInstructionsTemplate, welcomeTemplate } = require('../utils/formatter');
+const { esc, header, DIVIDER, dmWelcomeTemplate, welcomeTemplate } = require('../utils/formatter');
 const { LOCAL_FAQ_DB } = require('../services/aiService');
 const config = require('../config');
 
@@ -71,14 +71,14 @@ module.exports = {
         if (dmSent) {
           const downloadMsg = `${header('Download BloomFX App', '📱')}` +
             `To start copy\\-trading and manage your account, download the official BloomFX App from the link below:\n\n` +
-            `👉 [Download App](${config.POST_LINK})\n\n` +
-            `⚠️ *Only download from our official channel to protect your account*\\.`;
+            `👉 [Download APK](${config.APK_DOWNLOAD_URL})\n\n` +
+            `⚠️ *Only download from our official portals to protect your account*\\.`;
 
           await telegramService.sendDirectMessage(userId, downloadMsg, {
             reply_markup: {
               inline_keyboard: [
                 [
-                  { text: '📱 Download App', url: config.POST_LINK }
+                  { text: '📱 Download APK', url: config.APK_DOWNLOAD_URL }
                 ]
               ]
             }
