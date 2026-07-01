@@ -769,7 +769,7 @@ class AutoPostService {
       const replyMarkup = {
         inline_keyboard: [
           [
-            { text: '📱 Download App', url: config.POST_LINK },
+            { text: '📱 Download APK', url: config.APK_DOWNLOAD_URL },
             { text: '💬 Contact Support', url: config.SUPPORT_LINK }
           ],
           [

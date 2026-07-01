@@ -69,7 +69,7 @@ module.exports = {
 
   // APK Download and Installation Instructions Template
   apkInstructionsTemplate: (downloadUrl) => {
-    if (!downloadUrl) downloadUrl = 'https://c-pbloomfx-user-app-web.vercel.app/downloads/BloomFX-1.0.0.apk';
+    if (!downloadUrl) downloadUrl = require('../config').APK_DOWNLOAD_URL;
     return `${header('Download BloomFX App', '📱')}` +
       `To start copytrading and manage your financial deposits, download and install our official Android Application\\!\n\n` +
       `📥 *INSTALLATION INSTRUCTIONS:*\n` +
