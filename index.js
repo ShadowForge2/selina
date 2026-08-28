@@ -37,6 +37,25 @@ async function bootstrap() {
 
   // 3. Setup Express Routes
   
+  // ── Telegram Webhook Endpoint ──────────────────────────────────────────
+  // In webhook mode (production/Render) Telegram POSTs updates here.
+  // node-telegram-bot-api requires express.json() body parsing (already set).
+  if (config.CONNECTION_MODE === 'webhook') {
+    app.post('/webhook', (req, res) => {
+      const bot = getBotInstance();
+      if (!bot || !req.body) {
+        return res.sendStatus(200);
+      }
+      try {
+        bot.processUpdate(req.body);
+      } catch (err) {
+        logger.error('Error processing Telegram webhook update:', err.message);
+      }
+      // Always respond quickly — Telegram will otherwise retry spam updates.
+      res.sendStatus(200);
+    });
+  }
+  
   // ── Health Check Endpoints ─────────────────────────────────────────────
 
   // Uptime-Robot friendly probe — returns plain text "OK" with HTTP 200
@@ -88,7 +107,8 @@ async function bootstrap() {
         telegramBot: {
           status: botRunning ? 'running' : 'stopped',
           configured: !!config.BOT_TOKEN,
-          polling: botRunning ? bot.isPolling() : false
+          mode: config.CONNECTION_MODE,
+          polling: botRunning && config.CONNECTION_MODE === 'polling' ? bot.isPolling() : false
         },
         autoPoster: {
           running: autoPostService.timer !== null,

@@ -8,8 +8,29 @@ const logger = require('./src/utils/logger');
 
 let bot = null;
 
+const MAX_POLL_RETRIES = 10;
+const RESTART_DEBOUNCE_MS = 8000;
+
 /**
- * Initializes and starts the Telegram Community Management Bot
+ * Resolves the public webhook URL that Render can reach this instance on.
+ */
+function getWebhookUrl() {
+  const configured = config.WEBHOOK_URL || config.RENDER_URL;
+  if (configured) return configured;
+  // Render provides the public URL via the RENDER_EXTERNAL_URL env var.
+  if (process.env.RENDER_EXTERNAL_URL) return process.env.RENDER_EXTERNAL_URL;
+  if (process.env.RENDER_URL) return process.env.RENDER_URL;
+  return null;
+}
+
+/**
+ * Initializes and starts the Telegram Community Management Bot.
+ *
+ * Two connection modes:
+ *  - webhook (default on Render/production): Telegram POSTs updates to
+ *    <WEBHOOK_URL>/webhook. Only ONE instance ever holds the webhook slot, so
+ *    409 polling conflicts are impossible, even across deploy overlaps.
+ *  - polling (local dev only): long-polling with 409 auto-recovery.
  */
 function startBot() {
   if (!config.BOT_TOKEN) {
@@ -19,20 +40,19 @@ function startBot() {
 
   try {
     logger.info('Initializing Telegram bot instance...');
-    
-    // Instantiate Telegram Bot with Polling
+
+    const useWebhook = config.CONNECTION_MODE === 'webhook';
+    const webhookUrl = getWebhookUrl();
+
+    // Instantiate Telegram Bot WITHOUT auto-starting polling.
+    // For webhook mode we must not poll; for polling mode we start it below.
     bot = new TelegramBot(config.BOT_TOKEN, {
-      polling: {
-        autoStart: true,
-        params: {
-          timeout: 10
-        }
-      }
+      polling: false
     });
 
     // Initialize Services with Bot Instance
     telegramService.init(bot);
-    
+
     // Register Events and Command Dispatchers
     initEvents(bot);
 
@@ -43,57 +63,37 @@ function startBot() {
     groupPromoService.init(bot);
     groupPromoService.start();
 
-    // Core Bot Startup log
-    bot.getMe().then((me) => {
-      logger.info(`Telegram Community Manager Bot started successfully! Username: @${me.username}`);
-    }).catch(err => {
-      logger.error('Failed to query bot user details during startup:', err.message);
-    });
+    if (useWebhook && webhookUrl) {
+      // ── WEBHOOK MODE (production / Render) ─────────────────────────────
+      // The Express server exposes POST <PUBLIC_URL>/webhook (see index.js);
+      // bot.processUpdate() is called there. setWebhook always redirects the
+      // single Telegram update slot to THIS instance, eliminating 409s.
+      const full = webhookUrl.replace(/\/+$/, '') + '/webhook';
+      bot.setWebHook(full, {
+        allowed_updates: ['message', 'callback_query', 'new_chat_members', 'left_chat_member']
+      }).then(() => {
+        logger.info(`Telegram webhook registered → ${full} (mode: webhook)`);
+        return bot.getMe();
+      }).then((me) => {
+        logger.info(`Telegram Community Manager Bot started successfully! Username: @${me.username}`);
+      }).catch(err => {
+        logger.error('Failed to register Telegram webhook:', err.message);
+      });
+    } else {
+      // ── POLLING MODE (local dev) ───────────────────────────────────────
+      logger.warn('No webhook URL configured — using long-polling (dev mode). Set WEBHOOK_URL or RENDER_URL to use webhooks on Render.');
+      bot.startPolling({ timeout: 10 }).catch(err => {
+        logger.error('Failed to start polling:', err.message);
+      });
 
-    // Auto-recover from polling errors (e.g. 409 Conflict during deploy overlap)
-    // Uses timestamp-based debounce to ignore stale error events that accumulate
-    // during cooldown and fire after restart completes.
-    let pollRetries = 0;
-    let lastRestartTime = 0;
-    const MAX_POLL_RETRIES = 10;
-    const RESTART_DEBOUNCE_MS = 8000; // ignore errors within 8s of a successful restart
+      bot.getMe().then((me) => {
+        logger.info(`Telegram Community Manager Bot started successfully! Username: @${me.username}`);
+      }).catch(err => {
+        logger.error('Failed to query bot user details during startup:', err.message);
+      });
 
-    bot.on('polling_error', (error) => {
-      const now = Date.now();
-
-      // Ignore stale events that fired shortly after a successful restart
-      if (now - lastRestartTime < RESTART_DEBOUNCE_MS) return;
-
-      if (pollRetries >= MAX_POLL_RETRIES) {
-        logger.error('Max polling restart attempts reached. Will not retry.');
-        return;
-      }
-
-      pollRetries++;
-      logger.error(`Telegram Polling Error: ${error.message}`);
-
-      // For 409: use progressive cooldown (35s, 70s, 105s...) so competing
-      // instances eventually time out. For other errors: exponential backoff.
-      const is409 = error.message && error.message.includes('409');
-      const delay = is409
-        ? Math.min(pollRetries * 35000, 180000)
-        : Math.min(pollRetries * 5000, 30000);
-
-      logger.info(`Restarting polling in ${delay / 1000}s (attempt ${pollRetries}/${MAX_POLL_RETRIES})${is409 ? ' [409 cooldown]' : ''}...`);
-
-      setTimeout(async () => {
-        try {
-          await bot.stopPolling({ cancel: true }).catch(() => {});
-          await new Promise(r => setTimeout(r, 2000));
-          await bot.startPolling();
-          pollRetries = 0;
-          lastRestartTime = Date.now();
-          logger.info('Polling restarted successfully.');
-        } catch (err) {
-          logger.error(`Failed to restart polling: ${err.message}`);
-        }
-      }, delay);
-    });
+      installPollingRecovery();
+    }
 
     // Handle process events to clean up on shutdown
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
@@ -110,20 +110,72 @@ function startBot() {
 }
 
 /**
- * Handles clean termination of resources on server crash or shutdown
+ * Auto-recovery for long-polling mode (dev only) if a 409 conflict occurs.
+ * Not used in webhook mode.
+ */
+function installPollingRecovery() {
+  let pollRetries = 0;
+  let lastRestartTime = 0;
+
+  bot.on('polling_error', (error) => {
+    const now = Date.now();
+    if (now - lastRestartTime < RESTART_DEBOUNCE_MS) return;
+
+    if (pollRetries >= MAX_POLL_RETRIES) {
+      logger.error('Max polling restart attempts reached. Will not retry.');
+      return;
+    }
+
+    pollRetries++;
+    logger.error(`Telegram Polling Error: ${error.message}`);
+
+    const is409 = error.message && error.message.includes('409');
+    const delay = is409
+      ? Math.min(pollRetries * 35000, 180000)
+      : Math.min(pollRetries * 5000, 30000);
+
+    logger.info(`Restarting polling in ${delay / 1000}s (attempt ${pollRetries}/${MAX_POLL_RETRIES})${is409 ? ' [409 cooldown]' : ''}...`);
+
+    setTimeout(async () => {
+      try {
+        await bot.stopPolling({ cancel: true }).catch(() => {});
+        await new Promise(r => setTimeout(r, 2000));
+        await bot.startPolling({ timeout: 10 });
+        pollRetries = 0;
+        lastRestartTime = Date.now();
+        logger.info('Polling restarted successfully.');
+      } catch (err) {
+        logger.error(`Failed to restart polling: ${err.message}`);
+      }
+    }, delay);
+  });
+}
+
+/**
+ * Handles clean termination of resources on server crash or shutdown.
+ *
+ * In webhook mode we intentionally do NOT delete the webhook: Telegram holds a
+ * single update slot that the next booting instance re-claims via setWebHook.
+ * Deleting on shutdown would race with the successor and clear its registration.
  */
 function gracefulShutdown(signal) {
   logger.info(`Received ${signal}. Shutting down services gracefully...`);
   autoPostService.stop();
   groupPromoService.stop();
+
   if (bot) {
-    bot.stopPolling().then(() => {
-      logger.info('Telegram Bot polling stopped cleanly.');
+    if (config.CONNECTION_MODE === 'webhook') {
+      // No polling running in webhook mode — nothing left to clean up.
       process.exit(0);
-    }).catch(err => {
-      logger.error('Error stopping bot polling:', err.message);
-      process.exit(1);
-    });
+    } else {
+      bot.stopPolling().then(() => {
+        logger.info('Telegram Bot polling stopped cleanly.');
+        process.exit(0);
+      }).catch(err => {
+        logger.error('Error stopping bot polling:', err.message);
+        process.exit(1);
+      });
+    }
   } else {
     process.exit(0);
   }

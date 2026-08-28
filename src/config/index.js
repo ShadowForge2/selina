@@ -27,7 +27,14 @@ const config = {
   WARN_LIMIT: parseInt(process.env.WARN_LIMIT || '3', 10),
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   SIGN_UP_URL: process.env.SIGN_UP_URL || 'https://xprfire.site',
-  SUPPORT_USERNAME: process.env.SUPPORT_USERNAME || 'CPBsupport'
+  SUPPORT_USERNAME: process.env.SUPPORT_USERNAME || 'CPBsupport',
+
+  // Connection mode: 'webhook' (production / Render) or 'polling' (local dev)
+  // Auto-select webhook when WEBHOOK_URL is set; otherwise fall back to polling.
+  CONNECTION_MODE: (process.env.CONNECTION_MODE || (process.env.WEBHOOK_URL ? 'webhook' : 'polling')),
+  WEBHOOK_URL: process.env.WEBHOOK_URL || '',
+  WEBHOOK_SECRET: process.env.WEBHOOK_SECRET || '',
+  RENDER_URL: process.env.RENDER_URL || ''
 };
 
 // Check if critical configurations exist
