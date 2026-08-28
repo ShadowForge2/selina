@@ -18,7 +18,7 @@ const config = {
   CHANNEL_ID: process.env.CHANNEL_ID || '',
   GROUP_ID: process.env.GROUP_ID || '',
   
-  SUPPORT_LINK: process.env.SUPPORT_LINK || 'https://t.me/CPBloomFXSupport',
+  SUPPORT_LINK: process.env.SUPPORT_LINK || 'https://t.me/CPBsupport',
   CHANNEL_LINK: process.env.CHANNEL_LINK || 'https://t.me/CPBloomFXChannel',
   WEBSITE_LINK: process.env.WEBSITE_LINK || 'https://xprfire.site',
   CONTACT_ADMIN_LINK: process.env.CONTACT_ADMIN_LINK || 'https://t.me/CPBloomFXAdmin',
@@ -27,7 +27,7 @@ const config = {
   WARN_LIMIT: parseInt(process.env.WARN_LIMIT || '3', 10),
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   SIGN_UP_URL: process.env.SIGN_UP_URL || 'https://xprfire.site',
-  SUPPORT_USERNAME: process.env.SUPPORT_USERNAME || 'mia_malcovaofficialmanagement'
+  SUPPORT_USERNAME: process.env.SUPPORT_USERNAME || 'CPBsupport'
 };
 
 // Check if critical configurations exist

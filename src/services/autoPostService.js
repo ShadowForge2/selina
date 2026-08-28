@@ -773,7 +773,7 @@ class AutoPostService {
             { text: '💬 Contact Support', url: config.SUPPORT_LINK }
           ],
           [
-            { text: '📢 Join Community', url: config.CHANNEL_LINK }
+            { text: '📢 Join Community', url: config.GROUP_LINK }
           ]
         ]
       };
