@@ -75,30 +75,30 @@ const LOCAL_FAQ_DB = [
   {
     keywords: ['how do i earn', 'how to earn', 'how to make money', 'how does this work', 'how to make profit'],
     title: 'How to Earn on CPBloomFX',
-    response: `Download our official app, make a deposit, and start AI copy\\-trading\\. Your account automatically mirrors expert trades\\.`
+    response: `Sign up on our official website, make a deposit, and start AI copy\\-trading\\. Your account automatically mirrors expert trades\\.`
   },
   {
     keywords: ['copy trading', 'what is copy trading', 'copy trade', 'automated trading'],
     title: 'Copy Trading Explained',
     response: `Copy trading lets you automatically mirror the trades of experienced professionals\\.\n\n` +
-      `1️⃣ Download the BloomFX App\\.\n` +
+      `1️⃣ Sign up on our official website\\.\n` +
       `2️⃣ Fund your account\\.\n` +
       `3️⃣ One tap to start\\. Your portfolio copies every move of our master traders in real\\-time\\.`
   },
   {
     keywords: ['minimum deposit', 'how much to start', 'minimum investment', 'starting balance'],
     title: 'Minimum Deposit',
-    response: `You can start trading with a minimum deposit\\. The exact minimum is displayed inside the BloomFX App after registration\\. Higher deposits unlock higher tiers and bigger trading limits\\.`
+    response: `You can start trading with a minimum deposit\\. The exact minimum is displayed on the platform after registration\\. Higher deposits unlock higher tiers and bigger trading limits\\.`
   },
   {
-    keywords: ['app', 'download app', 'android app', 'where to download', 'bloomfx app'],
-    title: 'Download the App',
-    response: `Download the official BloomFX App from the link pinned in our channel\\. Only download from official sources to protect your account\\.`
+    keywords: ['app', 'download app', 'android app', 'where to download', 'bloomfx app', 'website', 'visit website'],
+    title: 'Access the Platform',
+    response: `You can access the platform directly from your browser at our official website\\: https\\://xprfire\\.site\\, no app download needed\\. Only use official sources to protect your account\\.`
   },
   {
     keywords: ['referral', 'refer', 'invite', 'referral link', 'referral bonus'],
-    title: 'Referral Program',
-    response: `Share your unique referral link to earn rewards when your invited friends make deposits\\.\nYour referral link is available in the bot DM via /start\\.`
+    title: 'Getting Started',
+    response: `To get started, visit our website https\\://xprfire\\.site to access the platform and create your account\\.`
   },
   {
     keywords: ['profit', 'returns', 'how much can i make', 'monthly profit', 'earning potential'],
@@ -112,8 +112,8 @@ const LOCAL_FAQ_DB = [
   },
   {
     keywords: ['ios', 'iphone', 'apple', 'app store'],
-    title: 'iOS App',
-    response: `The iOS version is currently under development\\. Android users can download the APK from our official website\\. Stay tuned for the App Store release\\!`
+    title: 'Platform Access',
+    response: `The platform runs entirely in your browser at https\\://xprfire\\.site, so it works on any device with no app download needed\\.`
   },
   {
     keywords: ['suspended', 'blocked', 'locked', "can't access", 'account issue'],

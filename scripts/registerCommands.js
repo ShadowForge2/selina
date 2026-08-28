@@ -9,9 +9,8 @@ if (!token) {
 }
 
 const commands = [
-  { command: 'start', description: 'Begin interaction with the bot and get referral link' },
+  { command: 'start', description: 'Begin interaction with the bot' },
   { command: 'rules', description: 'Read community guidelines' },
-  { command: 'verify', description: 'Check your verification status' },
   { command: 'help', description: 'View command documentation' },
 ];
 

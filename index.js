@@ -96,7 +96,6 @@ async function bootstrap() {
       config: {
         adminsConfigured: config.ADMIN_IDS.length,
         warnLimit: config.WARN_LIMIT,
-        verificationTimeoutMs: config.VERIFICATION_TIMEOUT_MS,
         geminiEnabled: !!config.GEMINI_API_KEY,
         supportLink: config.SUPPORT_LINK
       },

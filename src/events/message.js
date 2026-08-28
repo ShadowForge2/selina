@@ -1,6 +1,5 @@
 const { handleCommand } = require('../commands');
 const { processSpamFilter } = require('../middlewares/spamFilter');
-const { processVerificationCheck } = require('../middlewares/verificationCheck');
 const aiService = require('../services/aiService');
 const { Ticket } = require('../database/models/Ticket');
 const telegramService = require('../services/telegramService');
@@ -29,11 +28,7 @@ module.exports = {
       // GROUP CHAT PROCESSING FLOW
       // ==========================================
 
-      // 2A. Run Group Verification check
-      const verificationPassed = await processVerificationCheck(msg);
-      if (!verificationPassed) return;
-
-      // 2B. Run Spam, Flood, Profanity & Link filter
+      // 2A. Run Spam, Flood, Profanity & Link filter
       const spamCheckPassed = await processSpamFilter(msg);
       if (!spamCheckPassed) return;
 

@@ -164,7 +164,7 @@ const CHANNEL_POSTS = [
         `• 🛡️ *Risk Controls* \\- Built\\-in safeguards protect your capital at all times\\.\n\n` +
         `🎯 _Stop guessing\\. Start copying the best\\._\n` +
         `${DIVIDER}` +
-        `📱 *Download the BloomFX App* to get started today\\!`;
+        `📱 *Sign up at xprfire\\.site* to get started today\\!`;
     }
   },
   {
@@ -172,7 +172,7 @@ const CHANNEL_POSTS = [
     build: () => {
       return `${header('HOW CPBLOOMFX WORKS', '⚙️')}` +
         `Getting started is simple\\. Here\\'s how our copy\\-trading platform works:\\n\n` +
-        `1️⃣ *Download* the BloomFX App and create your trading account\\.\n` +
+        `1️⃣ *Visit* xprfire\\.site and create your trading account\\.\n` +
         `2️⃣ *Fund* your account via Paystack or Crypto deposit\\.\n` +
         `3️⃣ *Connect* to our automated MT4/MT5 master trading node\\.\n` +
         `4️⃣ *Sit Back* \\- Our expert traders execute, your account mirrors every move\\.\n\n` +
@@ -327,7 +327,7 @@ const CHANNEL_POSTS = [
         `• Professional\\-grade trade execution\\.\n` +
         `• Automated risk management\\.\n` +
         `• Up to 50% returns on your balance monthly\\.\n\n` +
-        `📱 _Download the BloomFX App and connect to our master node in under 5 minutes\\._\n` +
+        `📱 _Sign up at xprfire\\.site and connect to our master node in under 5 minutes\\._\n` +
         `${DIVIDER}` +
         `🎓 *CPBloomFX* \\| Trading made accessible\\.`;
     }
@@ -461,7 +461,7 @@ const CHANNEL_POSTS = [
         `• Fully automated copy\\-trading\\.\n` +
         `• Up to 50% returns monthly\\.\n` +
         `• Transparent, secure, and fully controlled by YOU\\.\n\n` +
-        `📱 _Join the movement\\. Download the BloomFX App and start today\\._\n` +
+        `📱 _Join the movement\\. Sign up at xprfire\\.site and start today\\._\n` +
         `${DIVIDER}` +
         `🚀 *CPBloomFX* \\| The future of passive income\\.`;
     }
@@ -656,7 +656,7 @@ const CHANNEL_POSTS = [
         `• 🏦 Traditional Savings: *0\\.5% per year*\n` +
         `• 📈 CPBloomFX Copy\\-Trading: *Up to 50% per month*\n\n` +
         `You don\\'t need to be a trader\\. You don\\'t need to watch charts\\. You just need to *connect your account* to our master node and let the experts handle the rest\\.\n\n` +
-        `📱 _Download the BloomFX App \\> Fund \\> Connect \\> Earn\\._\n` +
+        `📱 _Sign up at xprfire\\.site \\> Fund \\> Connect \\> Earn\\._\n` +
         `${DIVIDER}` +
         `💰 *CPBloomFX* \\| Make your money work harder\\.`;
     }
@@ -666,7 +666,7 @@ const CHANNEL_POSTS = [
     build: () => {
       return `${header('READY TO START EARNING?', '🚀')}` +
         `Here\\'s your 3\\-step path to automated profits:\n\n` +
-        `📱 *Step 1:* Download the BloomFX App from our official channel\\.\n` +
+        `📱 *Step 1:* Sign up at xprfire\\.site\\.\n` +
         `💳 *Step 2:* Register and fund your trading account\\.\n` +
         `🤖 *Step 3:* Connect to the CPBloomFX CopyTrading master node\\.\n\n` +
         `That\\'s it\\. From here, our experienced traders execute \\- and your account mirrors every profitable move automatically\\.\n\n` +
@@ -769,7 +769,7 @@ class AutoPostService {
       const replyMarkup = {
         inline_keyboard: [
           [
-            { text: '📱 Download APK', url: config.APK_DOWNLOAD_URL },
+            { text: '✍️ Sign Up', url: config.SIGN_UP_URL },
             { text: '💬 Contact Support', url: config.SUPPORT_LINK }
           ],
           [

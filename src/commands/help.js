@@ -1,17 +1,18 @@
 const telegramService = require('../services/telegramService');
 
-const HELP_TEXT = `📱 <b>CPBloomFX Setup Guide</b>
+const config = require('../config');
 
-<b>1️⃣ Download the App</b>
-• Android: Download the APK from the official CPBloomFX website only.
-• iOS version is currently under development.
-• Play Store release is coming soon.
+const HELP_TEXT = `🌐 <b>CPBloomFX Setup Guide</b>
+
+<b>1️⃣ Visit the Website</b>
+• Go to the official website: <a href="${config.WEBSITE_LINK}">${config.WEBSITE_LINK}</a>
+• Web-based platform — no app download needed.
 
 <b>2️⃣ Create an Account</b>
-• Open the app and tap <b>Sign Up</b>.
+• Open the website and tap <b>Sign Up</b>.
 • Enter your details and create a strong password.
 • Enable 2FA for added security.
-• KYC is coming soon. You can use the app without KYC for now, but future withdrawals and higher limits will require verification.
+• KYC is coming soon. You can use the platform without KYC for now, but future withdrawals and higher limits will require verification.
 
 <b>3️⃣ Deposit Funds</b>
 Go to <b>Finance → Deposit</b> and choose a method:
@@ -44,9 +45,9 @@ Once your deposit is confirmed, your trading limits unlock automatically based o
 • Review your trading history regularly.
 
 🛟 <b>Need Help?</b>
-• Contact Support via the in-app live chat.
+• Contact Support via the website live chat.
 • Visit the Help Center for guides and FAQs.
-• Follow official channels for updates on iOS, Play Store launch, KYC, and new features.
+• Follow official channels for updates on new features and KYC.
 
 🚀 <b>CPBloomFX — AI that doesn't just recommend, it trades.</b>`;
 

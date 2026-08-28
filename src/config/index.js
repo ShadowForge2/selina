@@ -20,16 +20,13 @@ const config = {
   
   SUPPORT_LINK: process.env.SUPPORT_LINK || 'https://t.me/CPBloomFXSupport',
   CHANNEL_LINK: process.env.CHANNEL_LINK || 'https://t.me/CPBloomFXChannel',
-  WEBSITE_LINK: process.env.WEBSITE_LINK || 'https://cpbloomfx.com',
+  WEBSITE_LINK: process.env.WEBSITE_LINK || 'https://xprfire.site',
   CONTACT_ADMIN_LINK: process.env.CONTACT_ADMIN_LINK || 'https://t.me/CPBloomFXAdmin',
-  APK_FILE_PATH: process.env.APK_FILE_PATH || './assets/bloomfx.apk',
   GROUP_LINK: process.env.GROUP_LINK || 'https://t.me/CPBloomFXGroup',
   
-  VERIFICATION_TIMEOUT_MS: parseInt(process.env.VERIFICATION_TIMEOUT_MS || '120000', 10),
   WARN_LIMIT: parseInt(process.env.WARN_LIMIT || '3', 10),
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-  POST_LINK: process.env.POST_LINK || 'https://t.me/cpbloomfxofficialtelegram/5',
-  APK_DOWNLOAD_URL: process.env.APK_DOWNLOAD_URL || 'https://c-pbloomfx-user-app-web.vercel.app/downloads/BloomFX-1.0.0.apk',
+  SIGN_UP_URL: process.env.SIGN_UP_URL || 'https://xprfire.site',
   SUPPORT_USERNAME: process.env.SUPPORT_USERNAME || 'mia_malcovaofficialmanagement'
 };
 

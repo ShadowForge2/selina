@@ -7,7 +7,6 @@ const { esc } = require('../utils/formatter');
 const start = require('./start');
 const help = require('./help');
 const rules = require('./rules');
-const verify = require('./verify');
 const mute = require('./mute');
 const ban = require('./ban');
 const warn = require('./warn');
@@ -20,7 +19,7 @@ const tagall = require('./tagall');
 
 // Register commands in a map
 const commands = new Map();
-const list = [start, help, rules, verify, mute, ban, warn, stats, broadcast, faq, ticket, reply, tagall];
+const list = [start, help, rules, mute, ban, warn, stats, broadcast, faq, ticket, reply, tagall];
 
 list.forEach(cmd => {
   commands.set(cmd.name, cmd);

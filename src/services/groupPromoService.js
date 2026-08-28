@@ -1,7 +1,6 @@
 const config = require('../config');
 const telegramService = require('./telegramService');
 const logger = require('../utils/logger');
-const { esc } = require('../utils/formatter');
 
 const PROMO_MESSAGES = [
   'Stay active in the community\\! Promo codes are released randomly, so keep an eye on the group\\.',
@@ -192,15 +191,7 @@ class GroupPromoService {
 
       const promo = ALL_MESSAGES[randomIndex];
 
-      const admins = await this.bot.getChatAdministrators(this.groupId);
-      const botInfo = await this.bot.getMe();
-
-      const taggable = admins.filter(a => a.user.id !== botInfo.id);
-      const mentions = taggable.map(m =>
-        `[${esc(m.user.first_name || 'User')}](tg://user?id=${m.user.id})`
-      ).join(', ');
-
-      const fullText = `${promo}\n\n${mentions}\n\n📱 ${config.APK_DOWNLOAD_URL}`;
+      const fullText = `${promo}\n\n✍️ Sign Up: ${config.SIGN_UP_URL}`;
 
       await telegramService.sendMessage(this.groupId, fullText);
       logger.info(`Group promo posted (${randomIndex}/${ALL_MESSAGES.length})`);
