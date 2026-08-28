@@ -237,6 +237,68 @@ class AiService {
       return null;
     }
   }
+
+  /**
+   * Gemini-enhanced ethics check.
+   * Distinguishes legitimate questions / expressions of doubt from actual
+   * abuse, harassment, false accusations/scam allegations, scam attempts,
+   * or disruptive behavior.
+   * @param {string} text The user message to evaluate.
+   * @returns {Promise<{unethical: boolean, reason: string}>}
+   */
+  async detectUnethical(text) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${config.GEMINI_API_KEY}`;
+
+      const payload = {
+        contents: [{
+          parts: [{
+            text: `You are a careful community safety moderator for a legitimate forex and crypto copy-trading community called CPBloomFX.
+
+Determine whether the following user message is UNETHICAL/DISRUPTIVE and should be flagged for moderation, or whether it is a legitimate question, concern, or expression of doubt that should be ALLOWED.
+
+IMPORTANT DISTINCTION:
+- Flag as UNETHICAL: outright abuse or profanity, harassment or personal attacks, spreading unverified false accusations presented as facts (e.g. "this is a scam", "you are thieves", "they steal money"), attempted phishing/scams ("verify your wallet", "send me your seed phrase"), spam/promotion of other projects, or aggressive trolling trying to disrupt the community.
+- ALLOW: people simply asking questions or expressing doubt ("is this platform safe?", "I suspect this might be risky, is it legit?", "I have concerns about safety", "can I trust this?"). Asking for reassurance is normal and should NOT be flagged.
+
+Respond with a STRICT JSON object and nothing else:
+{"unethical": true/false, "reason": "short reason"}
+
+Message: "${text}"
+`
+          }]
+        }]
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
+
+      const data = await response.json();
+      const raw = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
+        ? data.candidates[0].content.parts[0].text
+        : null;
+      if (!raw) return { unethical: false, reason: '' };
+
+      // Extract the JSON object from the response (Gemini may wrap it in code fences)
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          unethical: !!parsed.unethical,
+          reason: parsed.reason || ''
+        };
+      }
+      return { unethical: false, reason: '' };
+    } catch (error) {
+      logger.error('Gemini ethics check error:', error.message);
+      return { unethical: false, reason: '' };
+    }
+  }
 }
 
 module.exports = new AiService();

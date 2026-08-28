@@ -2,6 +2,7 @@ const telegramService = require('../services/telegramService');
 const { User } = require('../database/models/User');
 const { Stat } = require('../database/models/Stat');
 const { hasUnethicalWords } = require('../utils/wordList');
+const aiService = require('../services/aiService');
 const config = require('../config');
 const logger = require('../utils/logger');
 const { esc } = require('../utils/formatter');
@@ -61,12 +62,43 @@ async function processSpamFilter(msg) {
     return false;
   }
 
-  // 4. Unethical Words/Profanity Filtering
-  const hasProfanity = text && hasUnethicalWords(text);
-  if (hasProfanity) {
-    logger.warn(`[WORD FILTER] User @${username} used unethical/profane words.`);
-    await handleViolation(chat.id, from.id, username, message_id, 'Using unethical or profane language');
-    return false;
+  // 4. Unethical Words/Profanity Filtering (Gemini-enhanced)
+  const localProfanity = text && hasUnethicalWords(text);
+
+  if (text) {
+    const geminiEnabled = !!config.GEMINI_API_KEY;
+
+    // A) Local matcher found a potential violation -> confirm with Gemini if
+    //    available, so legitimate questions/doubt (e.g. "is this a scam?")
+    //    are NOT wrongly flagged. Without a key, keep the old behavior.
+    if (localProfanity) {
+      if (geminiEnabled) {
+        const verdict = await aiService.detectUnethical(text);
+        if (!verdict.unethical) {
+          logger.info(`[WORD FILTER] Gemini cleared legitimate doubt/discussion: "${text}"`);
+        } else {
+          logger.warn(`[GEMINI FILTER] Confirmed violation for @${username}: ${verdict.reason || 'unethical language'}`);
+          await handleViolation(chat.id, from.id, username, message_id, verdict.reason || 'Using unethical or profane language');
+          return false;
+        }
+      } else {
+        logger.warn(`[WORD FILTER] User @${username} used unethical/profane words.`);
+        await handleViolation(chat.id, from.id, username, message_id, 'Using unethical or profane language');
+        return false;
+      }
+    }
+
+    // B) No local keyword, but the message touches a sensitive topic -> let
+    //    Gemini catch cleverly-worded abuse, false accusations, or scams that
+    //    bypass the word list.
+    if (geminiEnabled && !localProfanity && maybeSensitive(text)) {
+      const verdict = await aiService.detectUnethical(text);
+      if (verdict.unethical) {
+        logger.warn(`[GEMINI FILTER] Flagged disguised unethical message for @${username}: ${verdict.reason}`);
+        await handleViolation(chat.id, from.id, username, message_id, verdict.reason || 'Unethical or disruptive content');
+        return false;
+      }
+    }
   }
 
   return true;
@@ -147,6 +179,26 @@ async function handleViolation(chatId, userId, username, messageId, reason) {
   } catch (error) {
     logger.error('Failed to handle spam violation:', error.message);
   }
+}
+
+/**
+ * Gate to decide whether a message is worth sending to Gemini for ethics
+ * review (i.e. it touches safety, money, trust, abuse, or scam topics).
+ * Keeps Gemini calls focused instead of running on every group message.
+ */
+const SENSITIVE_HINTS = [
+  'scam', 'fraud', 'fake', 'ponzi', 'trust', 'safe', 'legit', 'secure',
+  'suspect', 'suspicious', 'steal', 'theft', 'thief', 'criminal',
+  'money', 'withdraw', 'deposit', 'invest', 'profit', 'fund', 'wallet',
+  'airdrop', 'phish', 'hack', 'seed phrase', 'private key', 'recover',
+  'send me', 'dm me', 'verify', 'idiot', 'stupid', 'dumb', 'fool',
+  'profit', 'rich', 'guaranteed', '100x', 'bonus', 'referral'
+];
+
+function maybeSensitive(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return SENSITIVE_HINTS.some(hint => lower.includes(hint));
 }
 
 module.exports = {
