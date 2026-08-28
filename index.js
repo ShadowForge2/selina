@@ -39,6 +39,11 @@ async function bootstrap() {
   
   // ── Health Check Endpoints ─────────────────────────────────────────────
 
+  // Uptime-Robot friendly probe — returns plain text "OK" with HTTP 200
+  app.get('/healthz', (req, res) => {
+    res.status(200).send('OK');
+  });
+
   // Liveness probe — server is alive
   app.get('/health/live', (req, res) => {
     res.status(200).json({
