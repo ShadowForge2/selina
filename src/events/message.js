@@ -37,21 +37,28 @@ module.exports = {
         try { await bot.setMessageReaction(chat.id, msg.message_id, { reaction: [{ type: 'emoji', emoji: '❤' }] }); } catch (e) {}
       }
 
-      // 2D. Auto-answer questions and greetings in group
-      if (text && shouldAutoReply(text)) {
-        const aiReply = await aiService.processMessage(text);
-        if (aiReply) {
-          const mention = `[@${esc(from.username || from.first_name)}](tg://user?id=${from.id})`;
-          await telegramService.sendMessage(chat.id, `${mention}\n\n${aiReply}`);
-          return;
-        }
-        // Fallback for unanswered questions (not greetings)
-        if (isRealQuestion(text)) {
-          const mention = `[@${esc(from.username || from.first_name)}](tg://user?id=${from.id})`;
-          const referral = `${mention}\n\n❓ *I couldn't find a direct answer to your question*\\.\n` +
-            `Please contact @${config.SUPPORT_USERNAME.replace(/_/g, '\\_')} for further assistance\\. They will be happy to help\\! 💬`;
-          await telegramService.sendMessage(chat.id, referral);
-          return;
+      // 2D. Auto-answer questions, greetings and general community messages.
+      // Only respond to STANDALONE messages addressed to the group (not a
+      // reply to a specific user / not part of an ongoing one-on-one conversation).
+      const isConversationReply = !!msg.reply_to_message;
+
+      if (text && !isConversationReply) {
+        const communityDirected = shouldAutoReply(text) || isRealQuestion(text);
+        if (communityDirected) {
+          const aiReply = await aiService.processMessage(text);
+          if (aiReply) {
+            const mention = `[@${esc(from.username || from.first_name)}](tg://user?id=${from.id})`;
+            await telegramService.sendMessage(chat.id, `${mention}\n\n${aiReply}`);
+            return;
+          }
+          // Fallback for unanswered questions (not greetings)
+          if (isRealQuestion(text)) {
+            const mention = `[@${esc(from.username || from.first_name)}](tg://user?id=${from.id})`;
+            const referral = `${mention}\n\n❓ *I couldn't find a direct answer to your question*\\.\n` +
+              `Please contact @${config.SUPPORT_USERNAME.replace(/_/g, '\\_')} for further assistance\\. They will be happy to help\\! 💬`;
+            await telegramService.sendMessage(chat.id, referral);
+            return;
+          }
         }
       }
 
