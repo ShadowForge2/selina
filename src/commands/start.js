@@ -45,8 +45,7 @@ module.exports = {
         `• 💬 Open a support ticket to speak with our team\\.\n\n` +
         `👉 To access the platform, visit ${esc(config.WEBSITE_LINK)}\\.`;
 
-      await bot.sendMessage(userId, welcomeText, {
-        parse_mode: 'MarkdownV2',
+      await telegramService.sendMessage(userId, welcomeText, {
         disable_web_page_preview: true,
         reply_markup: replyMarkup()
       });
