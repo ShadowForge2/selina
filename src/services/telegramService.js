@@ -26,6 +26,18 @@ class TelegramService {
       };
       return await this.bot.sendMessage(chatId, text, defaultOptions);
     } catch (error) {
+      // If MarkdownV2 parsing fails (e.g. an unescaped character), resend as
+      // plain text so the message is NEVER lost silently.
+      const isParseError = error && error.message && (
+        error.message.includes('can\'t parse entities') ||
+        error.message.includes('parse entities')
+      );
+      if (isParseError) {
+        logger.warn(`MarkdownV2 parse failure to ${chatId}; resending as plain text.`);
+        const safeOptions = { ...options };
+        delete safeOptions.parse_mode;
+        return await this.bot.sendMessage(chatId, text, safeOptions);
+      }
       logger.error(`Failed to send message to ${chatId}:`, error.message);
       throw error;
     }
@@ -169,6 +181,15 @@ class TelegramService {
       };
       return await this.bot.sendMessage(userId, text, defaultOptions);
     } catch (error) {
+      const isParseError = error && error.message && (
+        error.message.includes('can\'t parse entities') ||
+        error.message.includes('parse entities')
+      );
+      if (isParseError) {
+        const safeOptions = { ...options };
+        delete safeOptions.parse_mode;
+        return await this.bot.sendMessage(userId, text, safeOptions);
+      }
       // Often happens if user hasn't started the bot in DM
       logger.warn(`Could not send DM to user ${userId}: ${error.message}. User might not have started the bot in DM.`);
       return null;
