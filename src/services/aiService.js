@@ -26,10 +26,13 @@ const LOCAL_FAQ_DB = [
       'is this company real', 'is this company safe'
     ],
     title: '🔒 Safety & Trust',
-    response: `We understand that safety is important when choosing any trading platform\\.\n\n` +
-      `CPBloomFX is built with security, risk management, and transparency in mind\\. User funds, account security features, and trading controls are designed to help provide a secure experience for our community\\.\n\n` +
-      `However, all trading and investment activities involve risk, and no platform can guarantee profits or eliminate market risk entirely\\. We encourage every user to do their own research, start with an amount they are comfortable with, and review all available information before making financial decisions\\.\n\n` +
-      `If you have specific questions about security, deposits, withdrawals, account protection, or how the platform works, our support team will be happy to assist\\.`
+    response: `Great question\\! You can be fully confident in CPBloomFX\\. We\\'re a *very accurate, genuine, and sustainable* platform built for long\\-term success\\. ✅\n\n` +
+      `🔹 *Real Value:* Our AI\\-driven copy\\-trading infrastructure is backed by proven strategies and real market execution\\.\n` +
+      `🔹 *Sustainable Returns:* We\\'re engineered for consistent, reliable performance \\- designed to last, not a quick scheme\\.\n` +
+      `🔹 *Transparent & Secure:* User funds and accounts are protected with strong security practices and clear controls\\.\n` +
+      `🔹 *Thriving Community:* Thousands of traders already trust us\\. You\\'re joining a real, growing ecosystem\\.\n\n` +
+      `💎 _As with any investment, we always encourage you to start with an amount you\\'re comfortable with \\- but rest assured, you\\'re with a platform built for accuracy and longevity\\._\n\n` +
+      `If you have any specific questions about security, deposits, or withdrawals, our support team is always happy to assist\\!`
   },
   {
     keywords: ['deposit', 'fund', 'paystack', 'payment', 'how to deposit', 'how do i deposit', 'funding'],
