@@ -125,32 +125,32 @@ const LOCAL_FAQ_DB = [
   {
     keywords: ['good morning', 'morning'],
     title: '🌅',
-    response: `Good morning\\! How are you doing today\\? Ready to make a deposit and start your investment journey\\? 🚀`
+    response: `Good morning\\! I hope you\\'re having a great day\\! 😊 How can I help you today\\?`
   },
   {
     keywords: ['good afternoon', 'good evening', 'good day'],
     title: '👋',
-    response: `Hello\\! Hope you\\'re having a great day\\! Ready to grow your investments with CPBloomFX\\? 🚀`
+    response: `Hello\\! I hope you\\'re having a great day\\! How can I help you today\\?`
   },
   {
-    keywords: ['hello', 'hi ', 'hey', 'howdy', 'greetings'],
+    keywords: ['hello', 'hi', 'hey', 'howdy', 'greetings'],
     title: '👋',
-    response: `Hey there\\! Welcome\\! Are you ready to make a deposit and start your investment journey\\? 🚀`
+    response: `Hey there\\! 👋 How can I help you today\\?`
   },
   {
     keywords: ['how far', "what's up", 'wassup', 'sup', 'yo'],
     title: '🙌',
-    response: `Hey\\! All good here\\! Are you ready to make a deposit and start your investment journey\\? 🚀`
+    response: `Hey\\! All good here\\! What can I do for you today\\?`
   },
   {
     keywords: ['how are you', 'how do you do'],
     title: '💚',
-    response: `I\\'m doing great, thanks for asking\\! Are you ready to make a deposit and start your investment journey\\? 🚀`
+    response: `I\\'m doing great, thanks for asking\\! How can I help you today\\?`
   },
   {
     keywords: ['good to be here', 'nice to meet', 'just joined'],
     title: '🎉',
-    response: `Great to have you here\\! Are you ready to make a deposit and start your investment journey\\? 🚀`
+    response: `Great to have you here\\! I\\'m here if you have any questions\\!`
   },
 
   // ── CONGRATULATIONS ────────────────────────────────────────
@@ -175,7 +175,7 @@ class AiService {
 
     // 1. Try local exact-keyword matcher (fastest and free)
     for (const faq of LOCAL_FAQ_DB) {
-      if (faq.keywords.some(keyword => cleanText.includes(keyword))) {
+      if (matchesKeyword(cleanText, faq.keywords)) {
         logger.info(`Local AI FAQ match triggered for query: "${userMessageText}"`);
         return `${header(faq.title, '🤖')}${faq.response}${DIVIDER}💬 Type your questions anytime, or click \`💬 Support\` for live agents\\.`;
       }
@@ -209,7 +209,7 @@ class AiService {
       const payload = {
         contents: [{
           parts: [{
-            text: `You are the CPBloomFX AI Community Manager, a highly knowledgeable, professional, and friendly trading and financial assistant. You represent an elite forex and crypto trading community. Provide direct, helpful answers to this user query: "${promptText}". Keep your reply concise (under 120 words), professional, and informative. Do not use markdown tags other than bold or lists.`
+            text: `You are the CPBloomFX AI Community Manager, a highly knowledgeable, professional, and friendly trading and financial assistant. You represent an elite forex and crypto trading community. Provide direct, helpful answers to this user query: "${promptText}". Keep your reply concise (under 120 words), professional, and informative. RESPOND IN PLAIN TEXT ONLY: do NOT use markdown, asterisks, underscores, backticks, or special formatting characters. Use simple numbered or bullet text with plain characters.` 
           }]
         }]
       };
@@ -238,3 +238,22 @@ class AiService {
 
 module.exports = new AiService();
 module.exports.LOCAL_FAQ_DB = LOCAL_FAQ_DB;
+
+/**
+ * Smart keyword matcher.
+ * - Multi-word phrases: substring match on normalized text (so "how to deposit" matches naturally).
+ * - Single words: word-boundary matching so e.g. "fund" does NOT match "refund" or "fundamental".
+ */
+function matchesKeyword(cleanText, keywords) {
+  return keywords.some(keyword => {
+    const normalized = keyword.toLowerCase().trim();
+    if (!normalized) return false;
+    // Multi-word phrase -> straight substring match
+    if (normalized.includes(' ')) {
+      return cleanText.includes(normalized);
+    }
+    // Single word -> match on whole-word boundaries (English letters, digits, apostrophes)
+    const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i').test(cleanText);
+  });
+}

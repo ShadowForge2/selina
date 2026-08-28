@@ -18,11 +18,12 @@ module.exports = {
         await bot.answerCallbackQuery(id);
         
         const tutorialText = `${header('Getting Started Guide', '📘')}` +
-          `Welcome to the CPBloomFX Ecosystem\\! Here is how to navigate our platforms:\n\n` +
-          `1️⃣ *Download User App:* Register, fund your trading account via Paystack/Crypto, and monitor payouts\\.\n` +
-          `2️⃣ *CopyTrading:* Connect your MetaTrader 4/5 account to our automated master nodes to copy premium trades\\.\n` +
-          `3️⃣ *Elite VIP Group:* Secure a monthly or lifetime subscription to get high-probability alerts directly on Telegram\\.\n\n` +
-          `💡 _For detailed instructions, feel free to open a /ticket to speak with a human support agent._`;
+          `Welcome to the *CPBloomFX Ecosystem*\\! Here is how to get started:\n\n` +
+          `1️⃣ *Sign Up:* Visit ${esc(config.WEBSITE_LINK)} and create your account\\.\n` +
+          `2️⃣ *Deposit:* Make a deposit to fund your account; higher deposits unlock higher ranks\\.\n` +
+          `3️⃣ *Copy Trade:* Click the *Copy Trading* option to connect and start mirroring our master traders automatically\\.\n` +
+          `4️⃣ *Earn:* Watch your account grow with up to *50% monthly returns* on your tradable balance\\.\n\n` +
+          `❓ _Have more questions\\? Ask in the community, and our team or members will be happy to help\\._`;
 
         const replyMarkup = {
           inline_keyboard: [
