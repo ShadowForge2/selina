@@ -13,13 +13,19 @@ const RESTART_DEBOUNCE_MS = 8000;
 
 /**
  * Resolves the public webhook URL that Render can reach this instance on.
+ * Priority: explicit WEBHOOK_URL → Render's RENDER_EXTERNAL_URL → RENDER_URL
+ * env → the well-known hostname for this service (last-resort, only if it
+ * matches the expected pattern). Returns null if nothing can be determined.
  */
 function getWebhookUrl() {
-  const configured = config.WEBHOOK_URL || config.RENDER_URL;
-  if (configured) return configured;
-  // Render provides the public URL via the RENDER_EXTERNAL_URL env var.
+  if (config.WEBHOOK_URL) return config.WEBHOOK_URL;
   if (process.env.RENDER_EXTERNAL_URL) return process.env.RENDER_EXTERNAL_URL;
+  if (config.RENDER_URL) return config.RENDER_URL;
   if (process.env.RENDER_URL) return process.env.RENDER_URL;
+  // Render legacy free-tier exposes the service at:
+  //   https://<service-name>-<hash>.onrender.com
+  // RENDER_SERVICE_NAME + RENDER_INSTANCE_ID aren't reliable for this, so only
+  // honor an explicit value. Never try to guess an unreachable hostname.
   return null;
 }
 
@@ -63,22 +69,17 @@ function startBot() {
     groupPromoService.init(bot);
     groupPromoService.start();
 
-    if (useWebhook && webhookUrl) {
+    if (useWebhook) {
+      if (!webhookUrl) {
+        logger.error('WEBHOOK MODE ACTIVE but no webhook URL could be resolved. Set WEBHOOK_URL (or RENDER_EXTERNAL_URL) in the environment, otherwise the bot will be disconnected from Telegram.');
+        return bot;
+      }
       // ── WEBHOOK MODE (production / Render) ─────────────────────────────
       // The Express server exposes POST <PUBLIC_URL>/webhook (see index.js);
       // bot.processUpdate() is called there. setWebhook always redirects the
       // single Telegram update slot to THIS instance, eliminating 409s.
       const full = webhookUrl.replace(/\/+$/, '') + '/webhook';
-      bot.setWebHook(full, {
-        allowed_updates: ['message', 'callback_query', 'new_chat_members', 'left_chat_member']
-      }).then(() => {
-        logger.info(`Telegram webhook registered → ${full} (mode: webhook)`);
-        return bot.getMe();
-      }).then((me) => {
-        logger.info(`Telegram Community Manager Bot started successfully! Username: @${me.username}`);
-      }).catch(err => {
-        logger.error('Failed to register Telegram webhook:', err.message);
-      });
+      registerWebhook(bot, full);
     } else {
       // ── POLLING MODE (local dev) ───────────────────────────────────────
       logger.warn('No webhook URL configured — using long-polling (dev mode). Set WEBHOOK_URL or RENDER_URL to use webhooks on Render.');
@@ -107,6 +108,54 @@ function startBot() {
     setTimeout(startBot, 10000);
     return null;
   }
+}
+
+/**
+ * Registers/keeps-alive the Telegram webhook.
+ * - Registers on startup.
+ * - Verifies it every WEBHOOK_CHECK_MS; if Telegram reports an empty webhook
+ *   URL (e.g. cleared externally, or a deploy raced and none got set), it
+ *   re-registers. Retries on failure with backoff.
+ */
+function registerWebhook(bot, fullUrl) {
+  const WEBHOOK_CHECK_MS = 30000;
+  let retries = 0;
+
+  const doRegister = () => {
+    bot.setWebHook(fullUrl, {
+      allowed_updates: ['message', 'callback_query', 'new_chat_members', 'left_chat_member']
+    }).then(() => {
+      logger.info(`Telegram webhook registered → ${fullUrl} (mode: webhook)`);
+      retries = 0;
+      return bot.getMe();
+    }).then((me) => {
+      logger.info(`Telegram Community Manager Bot started successfully! Username: @${me.username}`);
+    }).catch((err) => {
+      retries++;
+      const delay = Math.min(retries * 15000, 120000);
+      logger.error(`Failed to register Telegram webhook (${err.message}). Retrying in ${delay / 1000}s...`);
+      setTimeout(doRegister, delay);
+    });
+  };
+
+  // Verify the registered webhook is not empty/the correct one; re-register if needed.
+  const verify = () => {
+    bot.getWebHookInfo().then((info) => {
+      const current = (info && info.url) || '';
+      if (!current) {
+        logger.warn('Webhook URL is empty on Telegram — re-registering.');
+        doRegister();
+      } else if (current !== fullUrl) {
+        logger.warn(`Webhook points to ${current} instead of ${fullUrl} — re-registering.`);
+        doRegister();
+      }
+    }).catch(() => {
+      // Transient — attempt re-register on next cycle.
+    });
+  };
+
+  doRegister();
+  setInterval(verify, WEBHOOK_CHECK_MS);
 }
 
 /**
