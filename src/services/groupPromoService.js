@@ -193,7 +193,20 @@ class GroupPromoService {
 
       const fullText = `${promo}\n\n✍️ Sign Up: ${config.SIGN_UP_URL}`;
 
-      await telegramService.sendMessage(this.groupId, fullText);
+      // Advertise the channel the same way the channel advertises the group.
+      const replyMarkup = {
+        inline_keyboard: [
+          [
+            { text: '✍️ Sign Up', url: config.SIGN_UP_URL },
+            { text: '💬 Contact Support', url: config.SUPPORT_LINK }
+          ],
+          [
+            { text: '📢 Join Channel', url: config.CHANNEL_LINK }
+          ]
+        ]
+      };
+
+      await telegramService.sendMessage(this.groupId, fullText, { reply_markup: replyMarkup });
       logger.info(`Group promo posted (${randomIndex}/${ALL_MESSAGES.length})`);
     } catch (e) {
       logger.error('Failed to post group promo:', e.message);
